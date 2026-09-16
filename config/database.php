@@ -2,20 +2,33 @@
 /**
  * Database configuration and connection.
  *
- * CHANGE THESE VALUES to match your local PostgreSQL setup.
- * Never commit real production credentials to version control.
+ * Local database credentials are stored in database.local.php
+ * and should never be committed to version control.
  */
 
-define('DB_HOST', 'localhost');
-define('DB_PORT', '5432');
-define('DB_NAME', 'grade_system');
-define('DB_USER', 'postgres');
-define('DB_PASSWORD', '200515'); // <-- change this
+$localConfig = __DIR__ . '/database.local.php';
+
+if (file_exists($localConfig)) {
+    $dbConfig = require $localConfig;
+} else {
+    $dbConfig = [
+        'host' => 'localhost',
+        'port' => '5432',
+        'name' => 'grade_system',
+        'user' => 'postgres',
+        'password' => ''
+    ];
+}
+
+define('DB_HOST', $dbConfig['host']);
+define('DB_PORT', $dbConfig['port']);
+define('DB_NAME', $dbConfig['name']);
+define('DB_USER', $dbConfig['user']);
+define('DB_PASSWORD', $dbConfig['password']);
 
 /**
  * getDbConnection()
  * Returns a shared PDO connection to PostgreSQL.
- * Any database error is logged on the server and never shown to the user.
  */
 function getDbConnection(): PDO
 {
@@ -33,9 +46,9 @@ function getDbConnection(): PDO
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]);
+
         return $pdo;
     } catch (PDOException $e) {
-        // Never leak raw database errors to the browser.
         error_log('Database connection failed: ' . $e->getMessage());
         http_response_code(500);
         die('A system error occurred. Please try again later or contact the administrator.');

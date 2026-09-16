@@ -815,3 +815,279 @@ table.data-table {
 .sidebar-backdrop.show {
     display: block;
 }
+
+/* =====================================================================
+   TEACHER GRADE MANAGEMENT - MODERN UI
+   ===================================================================== */
+
+.grade-filter-card {
+    padding: 28px;
+}
+
+.grade-page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 26px;
+}
+
+.grade-page-heading > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.grade-heading-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+    color: #fff;
+    background: linear-gradient(
+        135deg,
+        var(--primary),
+        var(--primary-light)
+    );
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+}
+
+.grade-main-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 750;
+}
+
+.grade-main-subtitle {
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.grade-motto {
+    text-align: right;
+    font-size: 20px;
+    line-height: 1.1;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--primary);
+    opacity: 0.85;
+}
+
+.grade-motto span {
+    color: var(--primary-light);
+}
+
+.grade-filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.grade-filter-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.grade-filter-field select {
+    min-height: 48px;
+}
+
+/* Student grade section */
+
+.grade-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.grade-table-subtitle {
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.grade-table-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.grade-table-actions .search-input {
+    min-width: 270px;
+}
+
+.grade-data-table {
+    min-width: 900px !important;
+}
+
+.grade-data-table thead th {
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+
+.grade-data-table tbody td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.row-number {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(79, 70, 229, 0.08);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.grade-display {
+    display: inline-flex;
+    min-width: 68px;
+    justify-content: center;
+    padding: 8px 11px;
+    border-radius: 9px;
+    background: rgba(79, 70, 229, 0.06);
+    font-weight: 700;
+}
+
+.remarks-display {
+    color: var(--text-muted);
+}
+
+.row-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: nowrap;
+}
+
+.row-actions .btn {
+    white-space: nowrap;
+}
+
+.grade-empty-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.grade-no-results {
+    display: none;
+    padding: 30px 20px;
+}
+
+/* Add/Edit modal */
+
+.grade-modal-box {
+    max-width: 500px;
+    animation: fadeInUp 0.2s ease;
+}
+
+.grade-modal-subtitle {
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 12.5px;
+}
+
+.grade-modal-box .form-group {
+    margin-bottom: 18px;
+}
+
+.grade-modal-box .form-group label {
+    font-weight: 700;
+}
+
+.grade-modal-box .form-control {
+    min-height: 45px;
+}
+
+.grade-modal-box select.form-control {
+    cursor: pointer;
+}
+
+.grade-modal-box .modal-footer {
+    padding-top: 5px;
+}
+
+/* Slightly stronger delete button */
+
+.grade-data-table .btn-danger {
+    box-shadow: 0 5px 14px rgba(239, 68, 68, 0.18);
+}
+
+.grade-data-table .btn-primary {
+    box-shadow: 0 5px 14px rgba(79, 70, 229, 0.18);
+}
+
+/* Responsive */
+
+@media (max-width: 800px) {
+
+    .grade-page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .grade-motto {
+        text-align: left;
+    }
+
+    .grade-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .grade-table-actions {
+        width: 100%;
+    }
+
+    .grade-table-actions .search-input-wrap {
+        flex: 1;
+    }
+
+    .grade-table-actions .search-input {
+        width: 100%;
+        min-width: 0;
+    }
+
+}
+
+@media (max-width: 560px) {
+
+    .grade-filter-card {
+        padding: 20px;
+    }
+
+    .grade-main-title {
+        font-size: 22px;
+    }
+
+    .grade-heading-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 21px;
+    }
+
+    .grade-table-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .grade-table-actions .btn {
+        width: 100%;
+    }
+
+}
