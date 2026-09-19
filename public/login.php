@@ -40,8 +40,13 @@ if (isLoggedIn()) {
             </div>
 
             <button type="submit" id="loginBtn" class="btn btn-primary btn-block">
-                <span id="loginBtnText">Log In</span>
+                <span id="loginBtnText">Login</span>
             </button>
+
+            <div class="register-prompt">
+    <p>Don't have an account?</p>
+    <a href="register.php">Create Account</a>
+</div>
         </form>
 
         <div class="login-credentials-hint">

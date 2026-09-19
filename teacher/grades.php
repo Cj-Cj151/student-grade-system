@@ -396,13 +396,13 @@ include __DIR__ . '/../includes/header.php';
     aria-hidden="true"
 >
 
-    <div class="glass-card modal-box grade-modal-box">
+       <div class="glass-card modal-box grade-modal-box">
 
         <div class="modal-header">
 
             <div>
                 <h3 class="modal-title" id="gradeModalTitle">
-                    + Add Student Grade
+                    Add Student Grade
                 </h3>
 
                 <p class="grade-modal-subtitle">
@@ -426,47 +426,47 @@ include __DIR__ . '/../includes/header.php';
 
             <input type="hidden" id="gradeId">
 
-            <div class="form-group">
+            <!-- STUDENT SEARCH -->
+            <div class="form-group student-search-group">
 
-                <label for="studentSelect">
-                    Student *
+                <label for="studentSearch">
+                    Student
                 </label>
 
-                <select
-                    id="studentSelect"
+                <input
+                    type="text"
+                    id="studentSearch"
                     class="form-control"
+                    placeholder="Search student name or ID..."
+                    autocomplete="off"
                     required
                 >
 
-                    <option value="">
-                        Select student...
-                    </option>
+                <!-- Actual student ID sent to the API -->
+                <input
+                    type="hidden"
+                    id="studentId"
+                    value=""
+                >
 
-                    <?php foreach ($availableStudents as $student): ?>
-
-                        <option value="<?= (int) $student['student_id'] ?>">
-                            <?= clean(
-                                $student['login_id'] . ' - ' .
-                                $student['first_name'] . ' ' .
-                                $student['last_name']
-                            ) ?>
-                        </option>
-
-                    <?php endforeach; ?>
-
-                </select>
+                <!-- Search results -->
+                <div
+                    id="studentSuggestions"
+                    class="student-suggestions"
+                ></div>
 
                 <div class="form-hint" id="studentEditHint">
-                    Select the student whose grade you want to encode.
+                    Type a student name or ID, then select a student.
                 </div>
 
             </div>
 
 
+            <!-- GRADE -->
             <div class="form-group">
 
                 <label for="gradeValue">
-                    Grade *
+                    Grade
                 </label>
 
                 <input
@@ -487,6 +487,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
 
 
+            <!-- REMARKS -->
             <div class="form-group">
 
                 <label for="remarksValue">
@@ -504,6 +505,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
 
 
+            <!-- BUTTONS -->
             <div class="modal-footer">
 
                 <button
@@ -519,7 +521,9 @@ include __DIR__ . '/../includes/header.php';
                     class="btn btn-primary"
                     id="saveGradeBtn"
                 >
-                    <span id="saveGradeText">Save Grade</span>
+                    <span id="saveGradeText">
+                        Save Grade
+                    </span>
                 </button>
 
             </div>
@@ -530,8 +534,15 @@ include __DIR__ . '/../includes/header.php';
 
 </div>
 
-
 <?php
+
+$availableStudentsJson = json_encode(
+    $availableStudents,
+    JSON_HEX_TAG |
+    JSON_HEX_AMP |
+    JSON_HEX_APOS |
+    JSON_HEX_QUOT
+);
 
 $extraScript = <<<'JS'
 
@@ -546,7 +557,9 @@ const selectedTermId = Number(
 const gradeModal = document.getElementById('gradeModal');
 const gradeForm = document.getElementById('gradeForm');
 const gradeIdInput = document.getElementById('gradeId');
-const studentSelect = document.getElementById('studentSelect');
+const studentSearch = document.getElementById('studentSearch');
+const studentIdInput = document.getElementById('studentId');
+const studentSuggestions = document.getElementById('studentSuggestions');
 const gradeValueInput = document.getElementById('gradeValue');
 const remarksValueInput = document.getElementById('remarksValue');
 
@@ -595,6 +608,158 @@ if (searchInput) {
 
 }
 
+// ================================================================
+// STUDENT SEARCH
+// ================================================================
+
+const availableStudents = __AVAILABLE_STUDENTS__;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function selectStudent(student) {
+
+    studentSearch.value =
+        `${student.login_id} - ${student.first_name} ${student.last_name}`;
+
+    studentIdInput.value = student.student_id;
+
+    studentSuggestions.classList.remove('show');
+}
+
+function clearStudentSelection() {
+
+    studentSearch.value = '';
+
+    studentIdInput.value = '';
+
+    studentSuggestions.classList.remove('show');
+}
+
+function showStudentSuggestions() {
+
+    const search = studentSearch.value
+        .trim()
+        .toLowerCase();
+
+    const matches = availableStudents
+        .filter(student => {
+
+            const studentId =
+                String(student.login_id || '').toLowerCase();
+
+            const firstName =
+                String(student.first_name || '').toLowerCase();
+
+            const lastName =
+                String(student.last_name || '').toLowerCase();
+
+            const fullName =
+                `${firstName} ${lastName}`;
+
+            return (
+                studentId.includes(search) ||
+                firstName.includes(search) ||
+                lastName.includes(search) ||
+                fullName.includes(search)
+            );
+
+        })
+        .slice(0, 8);
+
+    studentSuggestions.innerHTML = '';
+
+    if (matches.length === 0) {
+
+        studentSuggestions.innerHTML = `
+            <div class="student-suggestion-empty">
+                No students found.
+            </div>
+        `;
+
+        studentSuggestions.classList.add('show');
+
+        return;
+    }
+
+    matches.forEach(student => {
+
+        const item = document.createElement('button');
+
+        item.type = 'button';
+
+        item.className =
+            'student-suggestion-item';
+
+        item.innerHTML = `
+            <strong>
+                ${escapeHtml(student.login_id)}
+            </strong>
+
+            <span>
+                ${escapeHtml(
+                    `${student.first_name} ${student.last_name}`
+                )}
+            </span>
+        `;
+
+        item.addEventListener(
+            'click',
+            () => selectStudent(student)
+        );
+
+        studentSuggestions.appendChild(item);
+
+    });
+
+    studentSuggestions.classList.add('show');
+}
+
+
+studentSearch.addEventListener(
+    'input',
+    function () {
+
+        studentIdInput.value = '';
+
+        showStudentSuggestions();
+
+    }
+);
+
+
+studentSearch.addEventListener(
+    'focus',
+    function () {
+
+        showStudentSuggestions();
+
+    }
+);
+
+
+document.addEventListener(
+    'click',
+    function (event) {
+
+        if (
+            !studentSearch.contains(event.target) &&
+            !studentSuggestions.contains(event.target)
+        ) {
+
+            studentSuggestions.classList.remove('show');
+
+        }
+
+    }
+);
+
 
 // ================================================================
 // OPEN MODAL
@@ -611,37 +776,54 @@ function openGradeModal(mode, data = {}) {
 
     if (mode === 'add') {
 
-        gradeModalTitle.textContent = '+ Add Student Grade';
+        gradeModalTitle.textContent = ' Add Student Grade';
         saveGradeText.textContent = 'Save Grade';
 
-        gradeIdInput.value = '';
-        studentSelect.value = '';
-        gradeValueInput.value = '';
-        remarksValueInput.value = '';
+       gradeIdInput.value = '';
+clearStudentSelection();
+gradeValueInput.value = '';
+remarksValueInput.value = '';
 
-        studentSelect.disabled = false;
+studentSearch.disabled = false;
 
     } else {
 
-        gradeModalTitle.textContent = '✏ Edit Student Grade';
-        saveGradeText.textContent = 'Update Grade';
+       gradeIdInput.value = data.gradeId || '';
 
-        gradeIdInput.value = data.gradeId || '';
-        studentSelect.value = data.studentId || '';
-        gradeValueInput.value = data.grade || '';
-        remarksValueInput.value = data.remarks || '';
+const editStudent = availableStudents.find(
+    student => String(student.student_id) === String(data.studentId)
+);
 
-        studentSelect.disabled = true;
+if (editStudent) {
+    studentSearch.value =
+        `${editStudent.login_id} - ${editStudent.first_name} ${editStudent.last_name}`;
+} else {
+    studentSearch.value = data.studentName || '';
+}
+
+studentIdInput.value = data.studentId || '';
+
+gradeValueInput.value = data.grade || '';
+remarksValueInput.value = data.remarks || '';
+
+studentSearch.disabled = true;
 
     }
 
     setTimeout(() => {
-        if (mode === 'add') {
-            studentSelect.focus();
-        } else {
-            gradeValueInput.focus();
-        }
-    }, 100);
+
+    if (mode === 'add') {
+
+        studentSearch.focus();
+        showStudentSuggestions();
+
+    } else {
+
+        gradeValueInput.focus();
+
+    }
+
+}, 100);
 
 }
 
@@ -671,10 +853,7 @@ function closeModal() {
 
 openAddGradeBtn?.addEventListener('click', () => {
 
-    const availableOptionCount =
-        studentSelect
-            ? studentSelect.querySelectorAll('option[value]').length
-            : 0;
+    const availableOptionCount = availableStudents.length;
 
     if (availableOptionCount === 0) {
 
@@ -741,18 +920,18 @@ gradeForm?.addEventListener('submit', async (event) => {
 
     event.preventDefault();
 
-    const gradeId = gradeIdInput.value.trim();
-    const studentId = studentSelect.value.trim();
-    const grade = gradeValueInput.value.trim();
-    const remarks = remarksValueInput.value.trim();
+   const gradeId = gradeIdInput.value.trim();
+const studentId = studentIdInput.value.trim();
+const grade = gradeValueInput.value.trim();
+const remarks = remarksValueInput.value.trim();
 
-    if (!gradeId && !studentId) {
+if (!gradeId && !studentId) {
 
-        showToast('Please select a student.', 'error');
-        studentSelect.focus();
+    showToast('Please select a student.', 'error');
+    studentSearch.focus();
 
-        return;
-    }
+    return;
+}
 
     if (grade === '') {
 
@@ -899,6 +1078,12 @@ document.querySelectorAll('.delete-grade-btn').forEach((button) => {
 });
 
 JS;
+
+$extraScript = str_replace(
+    '__AVAILABLE_STUDENTS__',
+    $availableStudentsJson,
+    $extraScript
+);
 
 include __DIR__ . '/../includes/footer.php';
 ?>
