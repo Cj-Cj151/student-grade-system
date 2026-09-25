@@ -1195,3 +1195,617 @@ table.data-table {
     font-size: 13px;
     text-align: center;
 }
+
+/* ================================================================
+   STUDENT DASHBOARD STAT CARDS
+   ================================================================ */
+
+.dashboard-stats {
+    gap: 20px;
+}
+
+.dashboard-stats .stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 22px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-stats .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+}
+
+.stat-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.stat-tag {
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.06);
+    color: #64748b;
+}
+
+.dashboard-stats .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.dashboard-stats .stat-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.stat-card-blue {
+    border-top: 3px solid #4f46e5;
+}
+
+.stat-card-green {
+    border-top: 3px solid #16a34a;
+}
+
+.stat-card-red {
+    border-top: 3px solid #dc2626;
+}
+
+.stat-card-orange {
+    border-top: 3px solid #ea580c;
+}
+
+/* ================================================================
+   STUDENT DASHBOARD - LARGER TEXT
+   ================================================================ */
+
+/* Welcome heading */
+.page-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+/* Welcome message */
+.page-header p {
+    font-size: 14px;
+}
+
+/* Academic / Completed / Attention / In Progress */
+.dashboard-stats .stat-tag {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.dashboard-stats .stat-value {
+    font-size: 38px;
+    font-weight: 800;
+}
+
+.dashboard-stats .stat-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* Profile and Recent Grades titles */
+.grid-2 .card-title,
+.grid-2 h2,
+.grid-2 h3 {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* Profile information */
+.grid-2 {
+    font-size: 14px;
+}
+
+/* Recent grades table */
+.grid-2 table th {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.grid-2 table td {
+    font-size: 14px;
+}
+
+/* Clean sidebar menu heading */
+.sidebar-menu-title {
+    margin: 6px 10px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* =========================================
+   STUDENT MY GRADES UI
+   ========================================= */
+
+.student-grades-panel {
+    overflow: hidden;
+}
+
+.student-grades-header {
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.student-grades-title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.student-grades-subtitle {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--text-muted);
+}
+
+.student-grades-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+.student-grades-toolbar .search-input-wrap {
+    flex: 1;
+    min-width: 220px;
+}
+
+.student-grades-toolbar .form-control {
+    min-height: 42px;
+}
+
+.student-grades-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.student-grades-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.student-grades-table tbody td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--text-main);
+    vertical-align: middle;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.student-grades-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.student-grades-table tbody tr:hover {
+    background: #f8faff;
+}
+
+.student-grades-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.student-grades-table .subject-code {
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.student-grades-table .subject-name {
+    font-weight: 600;
+}
+
+.student-grades-table .term-text,
+.student-grades-table .remarks-text {
+    color: var(--text-muted);
+}
+
+.student-grades-table .grade-value {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.student-grades-table .units-value {
+    font-weight: 700;
+    color: #475569;
+}
+
+.student-grades-empty {
+    padding: 42px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.student-grades-empty .empty-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+    .student-grades-table {
+        min-width: 900px;
+    }
+
+    .student-grades-toolbar {
+        align-items: stretch;
+    }
+
+    .student-grades-toolbar .search-input-wrap,
+    .student-grades-toolbar .form-control {
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .student-grades-title {
+        font-size: 19px;
+    }
+
+    .student-grades-table thead th,
+    .student-grades-table tbody td {
+        padding: 12px;
+    }
+}
+
+/* Better mobile grade table scrolling */
+.student-grades-panel .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+}
+
+.student-grades-panel .table-wrap::-webkit-scrollbar {
+    height: 7px;
+}
+
+.student-grades-panel .table-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+.student-grades-panel .table-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 999px;
+}
+
+@media (max-width: 700px) {
+    .student-grades-panel {
+        padding: 18px;
+    }
+
+    .student-grades-header {
+        margin-bottom: 16px;
+    }
+
+    .student-grades-toolbar {
+        gap: 10px;
+    }
+
+    .student-grades-table {
+        min-width: 900px;
+    }
+}
+
+/* =========================================
+   STUDENT PROFILE UI
+   ========================================= */
+
+.student-profile-panel {
+    max-width: 680px;
+    overflow: hidden;
+}
+
+.student-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 22px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.student-profile-avatar {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: linear-gradient(
+        135deg,
+        var(--primary),
+        var(--primary-light)
+    );
+    color: #ffffff;
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.student-profile-heading h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.student-profile-heading p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.student-profile-list {
+    margin-top: 8px;
+}
+
+.student-profile-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px 4px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.student-profile-list li:last-child {
+    border-bottom: none;
+}
+
+.student-profile-list .label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.student-profile-list li > span:last-child {
+    text-align: right;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.student-profile-list .badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+@media (max-width: 600px) {
+    .student-profile-panel {
+        max-width: 100%;
+    }
+
+    .student-profile-list li {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .student-profile-list li > span:last-child {
+        text-align: left;
+    }
+}
+
+/* Teacher dashboard welcome */
+.teacher-dashboard-welcome {
+    margin-bottom: 28px;
+}
+
+.teacher-dashboard-welcome h1 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+}
+
+.teacher-dashboard-welcome p {
+    margin: 8px 0 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Hide shared topbar on teacher dashboard */
+body:has(.teacher-dashboard-welcome) .topbar {
+    display: none;
+}
+
+@media (max-width: 560px) {
+    .teacher-dashboard-welcome h1 {
+        font-size: 26px;
+    }
+}
+
+/* Teacher dashboard stat cards */
+.teacher-dashboard-welcome + .stat-grid {
+    margin-top: 4px;
+}
+
+.teacher-dashboard-welcome + .stat-grid .stat-card {
+    min-height: 145px;
+    padding: 22px;
+}
+
+.teacher-dashboard-welcome + .stat-grid .stat-value {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.teacher-dashboard-welcome + .stat-grid .stat-label {
+    margin-top: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.teacher-dashboard-welcome + .stat-grid .stat-icon {
+    font-size: 25px;
+    margin-bottom: 12px;
+}
+
+/* Teacher dashboard - My Subjects */
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child {
+    overflow: hidden;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .panel-header {
+    padding-bottom: 16px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .panel-title {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .profile-list li {
+    padding: 15px 4px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .profile-list li:last-child {
+    border-bottom: none;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .profile-list .label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:first-child .profile-list li > span:last-child {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Teacher dashboard - Recent Grade Activity */
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) {
+    overflow: hidden;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .panel-header {
+    padding-bottom: 16px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .panel-title {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .data-table {
+    margin-top: 8px;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .data-table th {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .data-table td {
+    padding: 14px 12px;
+    font-size: 13.5px;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .data-table td:nth-child(3) {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.teacher-dashboard-welcome ~ .grid-2 .panel:nth-child(2) .cell-muted {
+    color: var(--text-muted);
+    font-size: 12.5px;
+}
+
+.data-table tbody td {
+    border-bottom: 0 !important;
+    box-shadow: inset 0 -1px 0 var(--border-color);
+}
+
+.data-table tbody tr:last-child td {
+    box-shadow: none;
+}
+
+.data-table td.row-actions {
+    display: table-cell;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.data-table td.row-actions .btn {
+    display: inline-flex;
+    margin-right: 7px;
+}
+
+.data-table td.row-actions .btn:last-child {
+    margin-right: 0;
+}
+
+#usersTable {
+    width: 100%;
+}
+
+.panel-header .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+}
+
+.panel-header .toolbar .search-input-wrap {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+.panel-header .toolbar #roleFilter {
+    width: 150px;
+    flex-shrink: 0;
+}
+
+.panel-header .toolbar .search-input,
+.panel-header .toolbar #roleFilter {
+    height: 44px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+    .panel-header .toolbar {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .panel-header .toolbar .search-input-wrap,
+    .panel-header .toolbar #roleFilter {
+        width: 100%;
+    }
+}

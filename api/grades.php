@@ -13,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $body = readJsonBody();
 
 $action = strtolower(trim((string) ($body['action'] ?? '')));
-
 $teacherId = $_SESSION['teacher_id'] ?? null;
 
 if (!$teacherId) {
@@ -25,11 +24,6 @@ if (!in_array($action, ['add', 'update', 'delete'], true)) {
 }
 
 $pdo = getDbConnection();
-
-
-// ================================================================
-// ADD GRADE
-// ================================================================
 
 if ($action === 'add') {
 
@@ -51,134 +45,92 @@ if ($action === 'add') {
 
     $remarks = trim((string) ($body['remarks'] ?? ''));
 
-
     if (!$studentId || !$subjectId || !$termId) {
-
         jsonResponse(
             false,
             'Student, subject, and academic term are required.',
             [],
             422
         );
-
     }
 
-
-    // Grade is required when adding a record.
     if ($gradeValue === null || $gradeValue === '') {
-
         jsonResponse(
             false,
             'Grade is required.',
             [],
             422
         );
-
     }
 
-
     if (!is_numeric($gradeValue)) {
-
         jsonResponse(
             false,
             'Grade must be a number.',
             [],
             422
         );
-
     }
-
 
     $gradeValue = (float) $gradeValue;
 
-
     if ($gradeValue < 0 || $gradeValue > 100) {
-
         jsonResponse(
             false,
             'Grade must be between 0 and 100.',
             [],
             422
         );
-
     }
 
-
     if (strlen($remarks) > 255) {
-
         jsonResponse(
             false,
             'Remarks must be 255 characters or fewer.',
             [],
             422
         );
-
     }
 
-
-    // ------------------------------------------------------------
-    // Verify teacher has access to the selected subject.
-    // ------------------------------------------------------------
-
     $stmt = $pdo->prepare('
-        SELECT 1
-        FROM grades
-        WHERE teacher_id = :tid
-          AND subject_id = :sid
+        SELECT subject_id
+        FROM subjects
+        WHERE subject_id = :sid
         LIMIT 1
     ');
 
     $stmt->execute([
-        'tid' => $teacherId,
         'sid' => $subjectId
     ]);
 
-
     if (!$stmt->fetchColumn()) {
-
         jsonResponse(
             false,
-            'You are not authorized to encode grades for this subject.',
+            'Selected subject was not found.',
             [],
-            403
+            404
         );
-
     }
 
-
-    // ------------------------------------------------------------
-    // Verify teacher has access to the selected academic term.
-    // ------------------------------------------------------------
-
     $stmt = $pdo->prepare('
-        SELECT 1
-        FROM grades
-        WHERE teacher_id = :tid
-          AND term_id = :termid
+        SELECT term_id
+        FROM academic_terms
+        WHERE term_id = :tid
         LIMIT 1
     ');
 
     $stmt->execute([
-        'tid' => $teacherId,
-        'termid' => $termId
+        'tid' => $termId
     ]);
 
-
     if (!$stmt->fetchColumn()) {
-
         jsonResponse(
             false,
-            'You are not authorized to encode grades for this academic term.',
+            'Selected academic term was not found.',
             [],
-            403
+            404
         );
-
     }
-
-
-    // ------------------------------------------------------------
-    // Make sure student exists and is active.
-    // ------------------------------------------------------------
 
     $stmt = $pdo->prepare('
         SELECT st.student_id
@@ -186,28 +138,21 @@ if ($action === 'add') {
         JOIN users u ON u.user_id = st.user_id
         WHERE st.student_id = :sid
           AND u.is_active = TRUE
+        LIMIT 1
     ');
 
     $stmt->execute([
         'sid' => $studentId
     ]);
 
-
     if (!$stmt->fetchColumn()) {
-
         jsonResponse(
             false,
             'Student account was not found or is inactive.',
             [],
             422
         );
-
     }
-
-
-    // ------------------------------------------------------------
-    // Prevent duplicate student + subject + term.
-    // ------------------------------------------------------------
 
     $stmt = $pdo->prepare('
         SELECT grade_id
@@ -224,18 +169,14 @@ if ($action === 'add') {
         'term_id' => $termId
     ]);
 
-
     if ($stmt->fetch()) {
-
         jsonResponse(
             false,
             'This student already has a grade for the selected subject and term.',
             [],
             409
         );
-
     }
-
 
     try {
 
@@ -282,9 +223,7 @@ if ($action === 'add') {
             [],
             500
         );
-
     }
-
 
     jsonResponse(
         true,
@@ -298,10 +237,6 @@ if ($action === 'add') {
 }
 
 
-// ================================================================
-// UPDATE GRADE
-// ================================================================
-
 if ($action === 'update') {
 
     $gradeId = isset($body['grade_id'])
@@ -314,71 +249,53 @@ if ($action === 'update') {
 
     $remarks = trim((string) ($body['remarks'] ?? ''));
 
-
     if (!$gradeId) {
-
         jsonResponse(
             false,
             'Missing or invalid grade record.',
             [],
             422
         );
-
     }
 
-
     if ($gradeValue === null || $gradeValue === '') {
-
         jsonResponse(
             false,
             'Grade is required.',
             [],
             422
         );
-
     }
 
-
     if (!is_numeric($gradeValue)) {
-
         jsonResponse(
             false,
             'Grade must be a number.',
             [],
             422
         );
-
     }
-
 
     $gradeValue = (float) $gradeValue;
 
-
     if ($gradeValue < 0 || $gradeValue > 100) {
-
         jsonResponse(
             false,
             'Grade must be between 0 and 100.',
             [],
             422
         );
-
     }
 
-
     if (strlen($remarks) > 255) {
-
         jsonResponse(
             false,
             'Remarks must be 255 characters or fewer.',
             [],
             422
         );
-
     }
 
-
-    // Verify ownership.
     $stmt = $pdo->prepare('
         SELECT grade_id
         FROM grades
@@ -392,18 +309,14 @@ if ($action === 'update') {
         'tid' => $teacherId
     ]);
 
-
     if (!$stmt->fetchColumn()) {
-
         jsonResponse(
             false,
             'You are not authorized to update this grade record.',
             [],
             403
         );
-
     }
-
 
     try {
 
@@ -434,9 +347,7 @@ if ($action === 'update') {
             [],
             500
         );
-
     }
-
 
     jsonResponse(
         true,
@@ -449,30 +360,21 @@ if ($action === 'update') {
 }
 
 
-// ================================================================
-// DELETE GRADE
-// ================================================================
-
 if ($action === 'delete') {
 
     $gradeId = isset($body['grade_id'])
         ? (int) $body['grade_id']
         : 0;
 
-
     if (!$gradeId) {
-
         jsonResponse(
             false,
             'Missing or invalid grade record.',
             [],
             422
         );
-
     }
 
-
-    // Verify ownership first.
     $stmt = $pdo->prepare('
         SELECT grade_id
         FROM grades
@@ -486,18 +388,14 @@ if ($action === 'delete') {
         'tid' => $teacherId
     ]);
 
-
     if (!$stmt->fetchColumn()) {
-
         jsonResponse(
             false,
             'You are not authorized to delete this grade record.',
             [],
             403
         );
-
     }
-
 
     try {
 
@@ -522,9 +420,7 @@ if ($action === 'delete') {
             [],
             500
         );
-
     }
-
 
     jsonResponse(
         true,

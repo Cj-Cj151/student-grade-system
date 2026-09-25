@@ -8,39 +8,81 @@ requireRole('teacher');
 $pdo = getDbConnection();
 $teacherId = $_SESSION['teacher_id'];
 
-// Subjects handled by this teacher.
 $stmt = $pdo->prepare('
-    SELECT DISTINCT s.subject_id, s.subject_code, s.subject_name
+    SELECT DISTINCT
+        s.subject_id,
+        s.subject_code,
+        s.subject_name
     FROM grades g
-    JOIN subjects s ON s.subject_id = g.subject_id
+    JOIN subjects s
+        ON s.subject_id = g.subject_id
     WHERE g.teacher_id = :tid
     ORDER BY s.subject_code
 ');
-$stmt->execute(['tid' => $teacherId]);
+
+$stmt->execute([
+    'tid' => $teacherId
+]);
+
 $subjects = $stmt->fetchAll();
 
-// Academic terms used by this teacher.
-$stmt = $pdo->prepare('
-    SELECT DISTINCT t.term_id, t.school_year, t.semester
-    FROM grades g
-    JOIN academic_terms t ON t.term_id = g.term_id
-    WHERE g.teacher_id = :tid
-    ORDER BY t.school_year DESC, t.term_id DESC
+$stmt = $pdo->query('
+    SELECT
+        term_id,
+        school_year,
+        semester,
+        grading_period,
+        status
+    FROM academic_terms
+    ORDER BY
+        school_year DESC,
+        CASE semester
+            WHEN \'1st Semester\' THEN 1
+            WHEN \'2nd Semester\' THEN 2
+            WHEN \'Summer\' THEN 3
+            ELSE 4
+        END,
+        CASE grading_period
+            WHEN \'Prelim\' THEN 1
+            WHEN \'Midterm\' THEN 2
+            WHEN \'Semi-Final\' THEN 3
+            WHEN \'Final\' THEN 4
+            ELSE 5
+        END
 ');
-$stmt->execute(['tid' => $teacherId]);
+
 $terms = $stmt->fetchAll();
 
 $selectedSubject = isset($_GET['subject_id'])
     ? (int) $_GET['subject_id']
     : ($subjects[0]['subject_id'] ?? 0);
 
+$activeTermId = 0;
+
+foreach ($terms as $term) {
+    if ($term['status'] === 'active') {
+        $activeTermId = (int) $term['term_id'];
+        break;
+    }
+}
+
 $selectedTerm = isset($_GET['term_id'])
     ? (int) $_GET['term_id']
-    : ($terms[0]['term_id'] ?? 0);
+    : ($activeTermId ?: ($terms[0]['term_id'] ?? 0));
+
+$selectedTermInfo = null;
+
+foreach ($terms as $term) {
+    if ((int) $term['term_id'] === $selectedTerm) {
+        $selectedTermInfo = $term;
+        break;
+    }
+}
 
 $students = [];
 
 if ($selectedSubject && $selectedTerm) {
+
     $stmt = $pdo->prepare('
         SELECT
             g.grade_id,
@@ -51,12 +93,16 @@ if ($selectedSubject && $selectedTerm) {
             st.last_name,
             u.login_id
         FROM grades g
-        JOIN students st ON st.student_id = g.student_id
-        JOIN users u ON u.user_id = st.user_id
+        JOIN students st
+            ON st.student_id = g.student_id
+        JOIN users u
+            ON u.user_id = st.user_id
         WHERE g.teacher_id = :tid
           AND g.subject_id = :subid
           AND g.term_id = :termid
-        ORDER BY st.last_name, st.first_name
+        ORDER BY
+            st.last_name,
+            st.first_name
     ');
 
     $stmt->execute([
@@ -68,11 +114,10 @@ if ($selectedSubject && $selectedTerm) {
     $students = $stmt->fetchAll();
 }
 
-// Students who do not yet have a grade record for the selected
-// subject and term.
 $availableStudents = [];
 
 if ($selectedSubject && $selectedTerm) {
+
     $stmt = $pdo->prepare('
         SELECT
             st.student_id,
@@ -80,7 +125,8 @@ if ($selectedSubject && $selectedTerm) {
             st.last_name,
             u.login_id
         FROM students st
-        JOIN users u ON u.user_id = st.user_id
+        JOIN users u
+            ON u.user_id = st.user_id
         WHERE u.is_active = TRUE
           AND NOT EXISTS (
               SELECT 1
@@ -89,7 +135,9 @@ if ($selectedSubject && $selectedTerm) {
                 AND g.subject_id = :subid
                 AND g.term_id = :termid
           )
-        ORDER BY st.last_name, st.first_name
+        ORDER BY
+            st.last_name,
+            st.first_name
     ');
 
     $stmt->execute([
@@ -107,34 +155,32 @@ $activeNav = 'grades';
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- ================================================================
-     SUBJECT + TERM FILTER
-     ================================================================ -->
-<div class="glass-card panel grade-filter-card">
+<div class="glass-card panel">
 
-    <div class="grade-page-heading">
+    <div class="panel-header">
+
         <div>
-            <div class="grade-heading-icon">&#128221;</div>
+            <h2 class="panel-title">
+                Grade Management
+            </h2>
 
-            <div>
-                <h2 class="grade-main-title">Grade Management</h2>
-                <p class="grade-main-subtitle">
-                    Encode and update grades for your students
-                </p>
-            </div>
+            <p class="panel-subtitle">
+                Select a subject and academic term to manage grades
+            </p>
         </div>
 
-        <div class="grade-motto">
-            Better Grades<br>
-            <span>Brighter Future</span>
-        </div>
     </div>
 
-    <form method="GET" id="filterForm" class="grade-filter-grid">
+    <form
+        method="GET"
+        id="filterForm"
+        class="grade-filter-grid"
+    >
 
         <div class="grade-filter-field">
+
             <label for="subjectSelect">
-                &#128218; Subject
+                Subject
             </label>
 
             <select
@@ -143,22 +189,34 @@ include __DIR__ . '/../includes/header.php';
                 class="form-control"
                 onchange="document.getElementById('filterForm').submit()"
             >
-                <option value="">-- Select Subject --</option>
+
+                <option value="">
+                    Select Subject
+                </option>
 
                 <?php foreach ($subjects as $subject): ?>
+
                     <option
                         value="<?= (int) $subject['subject_id'] ?>"
                         <?= $selectedSubject == $subject['subject_id'] ? 'selected' : '' ?>
                     >
-                        <?= clean($subject['subject_code'] . ' - ' . $subject['subject_name']) ?>
+                        <?= clean(
+                            $subject['subject_code']
+                            . ' - '
+                            . $subject['subject_name']
+                        ) ?>
                     </option>
+
                 <?php endforeach; ?>
+
             </select>
+
         </div>
 
         <div class="grade-filter-field">
+
             <label for="termSelect">
-                &#128197; Academic Term
+                Academic Term
             </label>
 
             <select
@@ -167,102 +225,148 @@ include __DIR__ . '/../includes/header.php';
                 class="form-control"
                 onchange="document.getElementById('filterForm').submit()"
             >
-                <option value="">-- Select Term --</option>
+
+                <option value="">
+                    Select Academic Term
+                </option>
 
                 <?php foreach ($terms as $term): ?>
+
                     <option
                         value="<?= (int) $term['term_id'] ?>"
                         <?= $selectedTerm == $term['term_id'] ? 'selected' : '' ?>
                     >
-                        <?= clean($term['school_year'] . ' - ' . $term['semester']) ?>
+                        <?= clean(
+                            $term['school_year']
+                            . ' - '
+                            . $term['semester']
+                            . ' - '
+                            . $term['grading_period']
+                        ) ?>
                     </option>
+
                 <?php endforeach; ?>
+
             </select>
+
         </div>
 
     </form>
+
 </div>
 
-
-<!-- ================================================================
-     STUDENT GRADES
-     ================================================================ -->
 <div class="glass-card panel">
 
-    <div class="grade-table-header">
+    <div class="panel-header">
 
         <div>
+
             <h2 class="panel-title">
-                &#128101; Student Grades
+                Student Grades
             </h2>
 
-            <p class="grade-table-subtitle">
-                Manage and encode grades for the selected subject and term.
+            <p class="panel-subtitle">
+
+                <?php if ($selectedTermInfo): ?>
+
+                    <?= clean(
+                        $selectedTermInfo['school_year']
+                        . ' - '
+                        . $selectedTermInfo['semester']
+                        . ' - '
+                        . $selectedTermInfo['grading_period']
+                    ) ?>
+
+                <?php else: ?>
+
+                    Manage and encode grades for the selected academic term.
+
+                <?php endif; ?>
+
             </p>
+
         </div>
 
-        <div class="grade-table-actions">
+        <div class="toolbar">
 
-            <div class="search-input-wrap">
-                <span class="search-icon">&#128269;</span>
+            <?php if (!empty($students)): ?>
 
-                <input
-                    type="text"
-                    id="searchInput"
-                    class="form-control search-input"
-                    placeholder="Search student name or ID..."
-                >
-            </div>
+                <div class="search-input-wrap">
+
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="form-control search-input"
+                        placeholder="Search student..."
+                        autocomplete="off"
+                    >
+
+                </div>
+
+            <?php endif; ?>
 
             <?php if ($selectedSubject && $selectedTerm): ?>
+
                 <button
                     type="button"
                     class="btn btn-primary"
                     id="openAddGradeBtn"
                 >
-                    + Add Grade
+                    Add Grade
                 </button>
+
             <?php endif; ?>
 
         </div>
-    </div>
 
+    </div>
 
     <?php if (empty($subjects) || empty($terms)): ?>
 
         <div class="empty-state">
-            <div class="empty-icon">&#128218;</div>
+
+            <h3>No Grade Management Data</h3>
 
             <p>
-                You have no subjects or academic terms available yet.
+                You need available subjects and academic terms before grades can be managed.
             </p>
-        </div>
 
+        </div>
 
     <?php elseif (empty($students)): ?>
 
-        <div class="empty-state" id="emptyStudentsState">
+        <div
+            class="empty-state"
+            id="emptyStudentsState"
+        >
 
-            <div class="empty-icon">&#128100;</div>
+            <h3>No Grade Records</h3>
 
             <p>
-                No grade records found for this subject and term.
+                No grade records were found for this subject and grading period.
             </p>
 
-            <p class="grade-empty-hint">
-                Click <strong>+ Add Grade</strong> to encode a grade.
-            </p>
+            <?php if ($selectedSubject && $selectedTerm && !empty($availableStudents)): ?>
+
+                <p class="grade-empty-hint">
+                    Click <strong>Add Grade</strong> to encode a student's grade.
+                </p>
+
+            <?php endif; ?>
 
         </div>
-
 
     <?php else: ?>
 
         <div class="table-wrap">
 
-            <table class="data-table grade-data-table" id="studentsTable">
+            <table
+                class="data-table grade-data-table"
+                id="studentsTable"
+            >
 
                 <thead>
+
                     <tr>
                         <th>#</th>
                         <th>Student ID</th>
@@ -272,6 +376,7 @@ include __DIR__ . '/../includes/header.php';
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
+
                 </thead>
 
                 <tbody>
@@ -279,12 +384,15 @@ include __DIR__ . '/../includes/header.php';
                     <?php foreach ($students as $index => $student): ?>
 
                         <tr
-                            data-name="<?= clean(strtolower(
-                                $student['first_name'] . ' ' .
-                                $student['last_name'] . ' ' .
-                                $student['login_id']
-                            )) ?>"
-                            data-grade-id="<?= (int) $student['grade_id'] ?>"
+                            data-name="<?= clean(
+                                strtolower(
+                                    $student['first_name']
+                                    . ' '
+                                    . $student['last_name']
+                                    . ' '
+                                    . $student['login_id']
+                                )
+                            ) ?>"
                         >
 
                             <td>
@@ -301,69 +409,89 @@ include __DIR__ . '/../includes/header.php';
 
                             <td>
                                 <?= clean(
-                                    $student['first_name'] . ' ' .
-                                    $student['last_name']
+                                    $student['first_name']
+                                    . ' '
+                                    . $student['last_name']
                                 ) ?>
                             </td>
 
                             <td>
+
                                 <span class="grade-display">
+
                                     <?= $student['grade'] !== null
-                                        ? number_format((float) $student['grade'], 2)
+                                        ? number_format(
+                                            (float) $student['grade'],
+                                            2
+                                        )
                                         : '—'
                                     ?>
+
                                 </span>
+
                             </td>
 
                             <td>
+
                                 <span class="remarks-display">
+
                                     <?= $student['remarks']
                                         ? clean($student['remarks'])
                                         : '—'
                                     ?>
+
                                 </span>
+
                             </td>
 
                             <td>
-                                <span class="badge status-badge <?= gradeStatusClass($student['grade']) ?>">
+
+                                <span
+                                    class="badge status-badge <?= gradeStatusClass($student['grade']) ?>"
+                                >
                                     <?= gradeStatus($student['grade']) ?>
                                 </span>
+
                             </td>
 
-                            <td>
-                                <div class="row-actions">
+                            <td class="row-actions">
 
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary btn-sm edit-grade-btn"
-                                        data-grade-id="<?= (int) $student['grade_id'] ?>"
-                                        data-student-id="<?= (int) $student['student_id'] ?>"
-                                        data-student-name="<?= clean(
-                                            $student['first_name'] . ' ' .
-                                            $student['last_name']
-                                        ) ?>"
-                                        data-grade="<?= $student['grade'] !== null
-                                            ? htmlspecialchars((string) $student['grade'])
-                                            : ''
-                                        ?>"
-                                        data-remarks="<?= clean($student['remarks'] ?? '') ?>"
-                                    >
-                                        &#9998; Edit
-                                    </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm edit-grade-btn"
+                                    data-grade-id="<?= (int) $student['grade_id'] ?>"
+                                    data-student-id="<?= (int) $student['student_id'] ?>"
+                                    data-student-name="<?= clean(
+                                        $student['first_name']
+                                        . ' '
+                                        . $student['last_name']
+                                    ) ?>"
+                                    data-grade="<?= $student['grade'] !== null
+                                        ? htmlspecialchars(
+                                            (string) $student['grade']
+                                        )
+                                        : ''
+                                    ?>"
+                                    data-remarks="<?= clean(
+                                        $student['remarks'] ?? ''
+                                    ) ?>"
+                                >
+                                    Edit
+                                </button>
 
-                                    <button
-                                        type="button"
-                                        class="btn btn-danger btn-sm delete-grade-btn"
-                                        data-grade-id="<?= (int) $student['grade_id'] ?>"
-                                        data-student-name="<?= clean(
-                                            $student['first_name'] . ' ' .
-                                            $student['last_name']
-                                        ) ?>"
-                                    >
-                                        &#128465; Delete
-                                    </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-danger btn-sm delete-grade-btn"
+                                    data-grade-id="<?= (int) $student['grade_id'] ?>"
+                                    data-student-name="<?= clean(
+                                        $student['first_name']
+                                        . ' '
+                                        . $student['last_name']
+                                    ) ?>"
+                                >
+                                    Delete
+                                </button>
 
-                                </div>
                             </td>
 
                         </tr>
@@ -376,9 +504,11 @@ include __DIR__ . '/../includes/header.php';
 
         </div>
 
-        <p class="empty-state grade-no-results" id="noResultsState">
-            <span class="empty-icon">&#128269;</span>
-            <br>
+        <p
+            class="empty-state grade-no-results"
+            id="noResultsState"
+            style="display:none;"
+        >
             No students match your search.
         </p>
 
@@ -386,28 +516,42 @@ include __DIR__ . '/../includes/header.php';
 
 </div>
 
-
-<!-- ================================================================
-     ADD / EDIT GRADE MODAL
-     ================================================================ -->
 <div
     class="modal-overlay"
     id="gradeModal"
     aria-hidden="true"
 >
 
-       <div class="glass-card modal-box grade-modal-box">
+    <div class="glass-card modal-box grade-modal-box">
 
         <div class="modal-header">
 
             <div>
-                <h3 class="modal-title" id="gradeModalTitle">
+
+                <h3
+                    class="modal-title"
+                    id="gradeModalTitle"
+                >
                     Add Student Grade
                 </h3>
 
                 <p class="grade-modal-subtitle">
-                    Enter the student's grade and remarks.
+
+                    <?php if ($selectedTermInfo): ?>
+
+                        <?= clean(
+                            $selectedTermInfo['grading_period']
+                            . ' Grade'
+                        ) ?>
+
+                    <?php else: ?>
+
+                        Enter the student's grade and remarks.
+
+                    <?php endif; ?>
+
                 </p>
+
             </div>
 
             <button
@@ -421,12 +565,13 @@ include __DIR__ . '/../includes/header.php';
 
         </div>
 
-
         <form id="gradeForm">
 
-            <input type="hidden" id="gradeId">
+            <input
+                type="hidden"
+                id="gradeId"
+            >
 
-            <!-- STUDENT SEARCH -->
             <div class="form-group student-search-group">
 
                 <label for="studentSearch">
@@ -442,27 +587,26 @@ include __DIR__ . '/../includes/header.php';
                     required
                 >
 
-                <!-- Actual student ID sent to the API -->
                 <input
                     type="hidden"
                     id="studentId"
                     value=""
                 >
 
-                <!-- Search results -->
                 <div
                     id="studentSuggestions"
                     class="student-suggestions"
                 ></div>
 
-                <div class="form-hint" id="studentEditHint">
+                <div
+                    class="form-hint"
+                    id="studentEditHint"
+                >
                     Type a student name or ID, then select a student.
                 </div>
 
             </div>
 
-
-            <!-- GRADE -->
             <div class="form-group">
 
                 <label for="gradeValue">
@@ -476,7 +620,7 @@ include __DIR__ . '/../includes/header.php';
                     min="0"
                     max="100"
                     step="0.01"
-                    placeholder="Enter grade (e.g. 90.00)"
+                    placeholder="Enter grade"
                     required
                 >
 
@@ -486,8 +630,6 @@ include __DIR__ . '/../includes/header.php';
 
             </div>
 
-
-            <!-- REMARKS -->
             <div class="form-group">
 
                 <label for="remarksValue">
@@ -499,13 +641,11 @@ include __DIR__ . '/../includes/header.php';
                     id="remarksValue"
                     class="form-control"
                     maxlength="255"
-                    placeholder="Enter remarks (e.g. Satisfactory)"
+                    placeholder="Enter remarks"
                 >
 
             </div>
 
-
-            <!-- BUTTONS -->
             <div class="modal-footer">
 
                 <button
@@ -554,73 +694,112 @@ const selectedTermId = Number(
     document.getElementById('termSelect')?.value || 0
 );
 
-const gradeModal = document.getElementById('gradeModal');
-const gradeForm = document.getElementById('gradeForm');
-const gradeIdInput = document.getElementById('gradeId');
-const studentSearch = document.getElementById('studentSearch');
-const studentIdInput = document.getElementById('studentId');
-const studentSuggestions = document.getElementById('studentSuggestions');
-const gradeValueInput = document.getElementById('gradeValue');
-const remarksValueInput = document.getElementById('remarksValue');
+const gradeModal =
+    document.getElementById('gradeModal');
 
-const gradeModalTitle = document.getElementById('gradeModalTitle');
-const saveGradeText = document.getElementById('saveGradeText');
-const saveGradeBtn = document.getElementById('saveGradeBtn');
+const gradeForm =
+    document.getElementById('gradeForm');
 
-const openAddGradeBtn = document.getElementById('openAddGradeBtn');
-const closeGradeModal = document.getElementById('closeGradeModal');
-const cancelGradeBtn = document.getElementById('cancelGradeBtn');
+const gradeIdInput =
+    document.getElementById('gradeId');
 
+const studentSearch =
+    document.getElementById('studentSearch');
 
-// ================================================================
-// SEARCH
-// ================================================================
+const studentIdInput =
+    document.getElementById('studentId');
 
-const searchInput = document.getElementById('searchInput');
-const rows = document.querySelectorAll('#studentsTable tbody tr');
-const noResultsState = document.getElementById('noResultsState');
+const studentSuggestions =
+    document.getElementById('studentSuggestions');
+
+const gradeValueInput =
+    document.getElementById('gradeValue');
+
+const remarksValueInput =
+    document.getElementById('remarksValue');
+
+const gradeModalTitle =
+    document.getElementById('gradeModalTitle');
+
+const saveGradeText =
+    document.getElementById('saveGradeText');
+
+const saveGradeBtn =
+    document.getElementById('saveGradeBtn');
+
+const openAddGradeBtn =
+    document.getElementById('openAddGradeBtn');
+
+const closeGradeModal =
+    document.getElementById('closeGradeModal');
+
+const cancelGradeBtn =
+    document.getElementById('cancelGradeBtn');
+
+const searchInput =
+    document.getElementById('searchInput');
+
+const rows =
+    document.querySelectorAll(
+        '#studentsTable tbody tr'
+    );
+
+const noResultsState =
+    document.getElementById('noResultsState');
 
 if (searchInput) {
 
-    searchInput.addEventListener('input', () => {
+    searchInput.addEventListener(
+        'input',
+        () => {
 
-        const search = searchInput.value.trim().toLowerCase();
-        let visibleCount = 0;
+            const search =
+                searchInput.value
+                    .trim()
+                    .toLowerCase();
 
-        rows.forEach((row) => {
+            let visibleCount = 0;
 
-            const show = row.dataset.name.includes(search);
+            rows.forEach((row) => {
 
-            row.style.display = show ? '' : 'none';
+                const show =
+                    row.dataset.name.includes(search);
 
-            if (show) {
-                visibleCount++;
+                row.style.display =
+                    show ? '' : 'none';
+
+                if (show) {
+                    visibleCount++;
+                }
+
+            });
+
+            if (noResultsState) {
+
+                noResultsState.style.display =
+                    visibleCount === 0
+                        ? 'block'
+                        : 'none';
+
             }
 
-        });
-
-        if (noResultsState) {
-            noResultsState.style.display =
-                visibleCount === 0 ? 'block' : 'none';
         }
-
-    });
+    );
 
 }
 
-// ================================================================
-// STUDENT SEARCH
-// ================================================================
-
-const availableStudents = __AVAILABLE_STUDENTS__;
+const availableStudents =
+    __AVAILABLE_STUDENTS__;
 
 function escapeHtml(value) {
+
     return String(value ?? '')
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+
 }
 
 function selectStudent(student) {
@@ -628,9 +807,11 @@ function selectStudent(student) {
     studentSearch.value =
         `${student.login_id} - ${student.first_name} ${student.last_name}`;
 
-    studentIdInput.value = student.student_id;
+    studentIdInput.value =
+        student.student_id;
 
     studentSuggestions.classList.remove('show');
+
 }
 
 function clearStudentSelection() {
@@ -640,38 +821,47 @@ function clearStudentSelection() {
     studentIdInput.value = '';
 
     studentSuggestions.classList.remove('show');
+
 }
 
 function showStudentSuggestions() {
 
-    const search = studentSearch.value
-        .trim()
-        .toLowerCase();
+    const search =
+        studentSearch.value
+            .trim()
+            .toLowerCase();
 
-    const matches = availableStudents
-        .filter(student => {
+    const matches =
+        availableStudents
+            .filter(student => {
 
-            const studentId =
-                String(student.login_id || '').toLowerCase();
+                const studentId =
+                    String(
+                        student.login_id || ''
+                    ).toLowerCase();
 
-            const firstName =
-                String(student.first_name || '').toLowerCase();
+                const firstName =
+                    String(
+                        student.first_name || ''
+                    ).toLowerCase();
 
-            const lastName =
-                String(student.last_name || '').toLowerCase();
+                const lastName =
+                    String(
+                        student.last_name || ''
+                    ).toLowerCase();
 
-            const fullName =
-                `${firstName} ${lastName}`;
+                const fullName =
+                    `${firstName} ${lastName}`;
 
-            return (
-                studentId.includes(search) ||
-                firstName.includes(search) ||
-                lastName.includes(search) ||
-                fullName.includes(search)
-            );
+                return (
+                    studentId.includes(search) ||
+                    firstName.includes(search) ||
+                    lastName.includes(search) ||
+                    fullName.includes(search)
+                );
 
-        })
-        .slice(0, 8);
+            })
+            .slice(0, 8);
 
     studentSuggestions.innerHTML = '';
 
@@ -686,11 +876,13 @@ function showStudentSuggestions() {
         studentSuggestions.classList.add('show');
 
         return;
+
     }
 
     matches.forEach(student => {
 
-        const item = document.createElement('button');
+        const item =
+            document.createElement('button');
 
         item.type = 'button';
 
@@ -719,36 +911,40 @@ function showStudentSuggestions() {
     });
 
     studentSuggestions.classList.add('show');
+
 }
 
+if (studentSearch) {
 
-studentSearch.addEventListener(
-    'input',
-    function () {
+    studentSearch.addEventListener(
+        'input',
+        function () {
 
-        studentIdInput.value = '';
+            studentIdInput.value = '';
 
-        showStudentSuggestions();
+            showStudentSuggestions();
 
-    }
-);
+        }
+    );
 
+    studentSearch.addEventListener(
+        'focus',
+        function () {
 
-studentSearch.addEventListener(
-    'focus',
-    function () {
+            showStudentSuggestions();
 
-        showStudentSuggestions();
+        }
+    );
 
-    }
-);
-
+}
 
 document.addEventListener(
     'click',
     function (event) {
 
         if (
+            studentSearch &&
+            studentSuggestions &&
             !studentSearch.contains(event.target) &&
             !studentSuggestions.contains(event.target)
         ) {
@@ -760,322 +956,422 @@ document.addEventListener(
     }
 );
 
-
-// ================================================================
-// OPEN MODAL
-// ================================================================
-
-function openGradeModal(mode, data = {}) {
+function openGradeModal(
+    mode,
+    data = {}
+) {
 
     if (!gradeModal) {
         return;
     }
 
     gradeModal.classList.add('show');
-    gradeModal.setAttribute('aria-hidden', 'false');
+
+    gradeModal.setAttribute(
+        'aria-hidden',
+        'false'
+    );
 
     if (mode === 'add') {
 
-        gradeModalTitle.textContent = ' Add Student Grade';
-        saveGradeText.textContent = 'Save Grade';
+        gradeModalTitle.textContent =
+            'Add Student Grade';
 
-       gradeIdInput.value = '';
-clearStudentSelection();
-gradeValueInput.value = '';
-remarksValueInput.value = '';
+        saveGradeText.textContent =
+            'Save Grade';
 
-studentSearch.disabled = false;
+        gradeIdInput.value = '';
+
+        clearStudentSelection();
+
+        gradeValueInput.value = '';
+
+        remarksValueInput.value = '';
+
+        studentSearch.disabled = false;
 
     } else {
 
-       gradeIdInput.value = data.gradeId || '';
+        gradeModalTitle.textContent =
+            'Edit Student Grade';
 
-const editStudent = availableStudents.find(
-    student => String(student.student_id) === String(data.studentId)
-);
+        saveGradeText.textContent =
+            'Update Grade';
 
-if (editStudent) {
-    studentSearch.value =
-        `${editStudent.login_id} - ${editStudent.first_name} ${editStudent.last_name}`;
-} else {
-    studentSearch.value = data.studentName || '';
-}
+        gradeIdInput.value =
+            data.gradeId || '';
 
-studentIdInput.value = data.studentId || '';
+        studentSearch.value =
+            data.studentName || '';
 
-gradeValueInput.value = data.grade || '';
-remarksValueInput.value = data.remarks || '';
+        studentIdInput.value =
+            data.studentId || '';
 
-studentSearch.disabled = true;
+        gradeValueInput.value =
+            data.grade || '';
+
+        remarksValueInput.value =
+            data.remarks || '';
+
+        studentSearch.disabled = true;
 
     }
 
     setTimeout(() => {
 
-    if (mode === 'add') {
+        if (mode === 'add') {
 
-        studentSearch.focus();
-        showStudentSuggestions();
+            studentSearch.focus();
 
-    } else {
+            showStudentSuggestions();
 
-        gradeValueInput.focus();
+        } else {
 
-    }
+            gradeValueInput.focus();
 
-}, 100);
+        }
+
+    }, 100);
 
 }
 
-
-// ================================================================
-// CLOSE MODAL
-// ================================================================
-
-function closeModal() {
+function closeGradeModalWindow() {
 
     if (!gradeModal) {
         return;
     }
 
     gradeModal.classList.remove('show');
-    gradeModal.setAttribute('aria-hidden', 'true');
+
+    gradeModal.setAttribute(
+        'aria-hidden',
+        'true'
+    );
 
     if (gradeForm) {
         gradeForm.reset();
     }
 
     gradeIdInput.value = '';
-    studentSelect.disabled = false;
+
+    studentIdInput.value = '';
+
+    studentSearch.disabled = false;
+
+    studentSuggestions.classList.remove('show');
 
 }
 
+openAddGradeBtn?.addEventListener(
+    'click',
+    () => {
 
-openAddGradeBtn?.addEventListener('click', () => {
+        if (availableStudents.length === 0) {
 
-    const availableOptionCount = availableStudents.length;
+            showToast(
+                'All available students already have a grade for this subject and grading period.',
+                'info'
+            );
 
-    if (availableOptionCount === 0) {
-
-        showToast(
-            'All available students already have a grade for this subject and term.',
-            'info'
-        );
-
-        return;
-    }
-
-    openGradeModal('add');
-
-});
-
-
-closeGradeModal?.addEventListener('click', closeModal);
-cancelGradeBtn?.addEventListener('click', closeModal);
-
-
-gradeModal?.addEventListener('click', (event) => {
-
-    if (event.target === gradeModal) {
-        closeModal();
-    }
-
-});
-
-
-document.addEventListener('keydown', (event) => {
-
-    if (event.key === 'Escape') {
-        closeModal();
-    }
-
-});
-
-
-// ================================================================
-// EDIT
-// ================================================================
-
-document.querySelectorAll('.edit-grade-btn').forEach((button) => {
-
-    button.addEventListener('click', () => {
-
-        openGradeModal('edit', {
-            gradeId: button.dataset.gradeId,
-            studentId: button.dataset.studentId,
-            grade: button.dataset.grade,
-            remarks: button.dataset.remarks
-        });
-
-    });
-
-});
-
-
-// ================================================================
-// ADD / UPDATE SUBMIT
-// ================================================================
-
-gradeForm?.addEventListener('submit', async (event) => {
-
-    event.preventDefault();
-
-   const gradeId = gradeIdInput.value.trim();
-const studentId = studentIdInput.value.trim();
-const grade = gradeValueInput.value.trim();
-const remarks = remarksValueInput.value.trim();
-
-if (!gradeId && !studentId) {
-
-    showToast('Please select a student.', 'error');
-    studentSearch.focus();
-
-    return;
-}
-
-    if (grade === '') {
-
-        showToast('Please enter a grade.', 'error');
-        gradeValueInput.focus();
-
-        return;
-    }
-
-    const numericGrade = Number(grade);
-
-    if (
-        Number.isNaN(numericGrade) ||
-        numericGrade < 0 ||
-        numericGrade > 100
-    ) {
-
-        showToast(
-            'Grade must be a number between 0 and 100.',
-            'error'
-        );
-
-        gradeValueInput.focus();
-
-        return;
-    }
-
-
-    saveGradeBtn.disabled = true;
-    saveGradeText.innerHTML = '<span class="spinner"></span> Saving...';
-
-
-    const payload = {
-        action: gradeId ? 'update' : 'add',
-        grade_id: gradeId ? Number(gradeId) : null,
-        student_id: studentId ? Number(studentId) : null,
-        subject_id: selectedSubjectId,
-        term_id: selectedTermId,
-        grade: numericGrade,
-        remarks: remarks
-    };
-
-
-    const result = await apiFetch('/api/grades.php', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    });
-
-
-    saveGradeBtn.disabled = false;
-
-    saveGradeText.textContent =
-        gradeId ? 'Update Grade' : 'Save Grade';
-
-
-    if (!result.success) {
-
-        showToast(
-            result.message || 'Unable to save grade.',
-            'error'
-        );
-
-        return;
-    }
-
-
-    showToast(
-        result.message || 'Grade saved successfully.',
-        'success'
-    );
-
-
-    setTimeout(() => {
-        window.location.reload();
-    }, 600);
-
-});
-
-
-// ================================================================
-// DELETE
-// ================================================================
-
-document.querySelectorAll('.delete-grade-btn').forEach((button) => {
-
-    button.addEventListener('click', async () => {
-
-        const gradeId = Number(button.dataset.gradeId);
-        const studentName = button.dataset.studentName || 'this student';
-
-        const confirmed = await confirmAction(
-            `Delete the grade record for ${studentName}?`,
-            'Delete Grade'
-        );
-
-        if (!confirmed) {
             return;
+
         }
 
+        openGradeModal('add');
 
-        button.disabled = true;
+    }
+);
 
-        const originalText = button.innerHTML;
+closeGradeModal?.addEventListener(
+    'click',
+    closeGradeModalWindow
+);
 
-        button.innerHTML =
-            '<span class="spinner"></span>';
+cancelGradeBtn?.addEventListener(
+    'click',
+    closeGradeModalWindow
+);
 
+gradeModal?.addEventListener(
+    'click',
+    (event) => {
 
-        const result = await apiFetch('/api/grades.php', {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'delete',
-                grade_id: gradeId
-            })
-        });
+        if (event.target === gradeModal) {
+            closeGradeModalWindow();
+        }
 
+    }
+);
+
+document.addEventListener(
+    'keydown',
+    (event) => {
+
+        if (event.key === 'Escape') {
+            closeGradeModalWindow();
+        }
+
+    }
+);
+
+document
+    .querySelectorAll('.edit-grade-btn')
+    .forEach((button) => {
+
+        button.addEventListener(
+            'click',
+            () => {
+
+                openGradeModal(
+                    'edit',
+                    {
+                        gradeId:
+                            button.dataset.gradeId,
+
+                        studentId:
+                            button.dataset.studentId,
+
+                        studentName:
+                            button.dataset.studentName,
+
+                        grade:
+                            button.dataset.grade,
+
+                        remarks:
+                            button.dataset.remarks
+                    }
+                );
+
+            }
+        );
+
+    });
+
+gradeForm?.addEventListener(
+    'submit',
+    async (event) => {
+
+        event.preventDefault();
+
+        const gradeId =
+            gradeIdInput.value.trim();
+
+        const studentId =
+            studentIdInput.value.trim();
+
+        const grade =
+            gradeValueInput.value.trim();
+
+        const remarks =
+            remarksValueInput.value.trim();
+
+        if (!gradeId && !studentId) {
+
+            showToast(
+                'Please select a student.',
+                'error'
+            );
+
+            studentSearch.focus();
+
+            return;
+
+        }
+
+        if (grade === '') {
+
+            showToast(
+                'Please enter a grade.',
+                'error'
+            );
+
+            gradeValueInput.focus();
+
+            return;
+
+        }
+
+        const numericGrade =
+            Number(grade);
+
+        if (
+            Number.isNaN(numericGrade) ||
+            numericGrade < 0 ||
+            numericGrade > 100
+        ) {
+
+            showToast(
+                'Grade must be a number between 0 and 100.',
+                'error'
+            );
+
+            gradeValueInput.focus();
+
+            return;
+
+        }
+
+        saveGradeBtn.disabled = true;
+
+        saveGradeText.innerHTML =
+            '<span class="spinner"></span> Saving...';
+
+        const payload = {
+
+            action:
+                gradeId
+                    ? 'update'
+                    : 'add',
+
+            grade_id:
+                gradeId
+                    ? Number(gradeId)
+                    : null,
+
+            student_id:
+                studentId
+                    ? Number(studentId)
+                    : null,
+
+            subject_id:
+                selectedSubjectId,
+
+            term_id:
+                selectedTermId,
+
+            grade:
+                numericGrade,
+
+            remarks:
+                remarks
+
+        };
+
+        const result =
+            await apiFetch(
+                '/api/grades.php',
+                {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }
+            );
+
+        saveGradeBtn.disabled = false;
+
+        saveGradeText.textContent =
+            gradeId
+                ? 'Update Grade'
+                : 'Save Grade';
 
         if (!result.success) {
 
-            button.disabled = false;
-            button.innerHTML = originalText;
-
             showToast(
-                result.message || 'Unable to delete grade.',
+                result.message ||
+                'Unable to save grade.',
                 'error'
             );
 
             return;
+
         }
 
-
         showToast(
-            result.message || 'Grade deleted successfully.',
+            result.message ||
+            'Grade saved successfully.',
             'success'
         );
 
+        setTimeout(
+            () => {
+                window.location.reload();
+            },
+            600
+        );
 
-        setTimeout(() => {
-            window.location.reload();
-        }, 600);
+    }
+);
+
+document
+    .querySelectorAll('.delete-grade-btn')
+    .forEach((button) => {
+
+        button.addEventListener(
+            'click',
+            async () => {
+
+                const gradeId =
+                    Number(
+                        button.dataset.gradeId
+                    );
+
+                const studentName =
+                    button.dataset.studentName ||
+                    'this student';
+
+                const confirmed =
+                    await confirmAction(
+                        `Delete the grade record for ${studentName}?`,
+                        'Delete Grade'
+                    );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                button.disabled = true;
+
+                const originalText =
+                    button.innerHTML;
+
+                button.innerHTML =
+                    '<span class="spinner"></span>';
+
+                const result =
+                    await apiFetch(
+                        '/api/grades.php',
+                        {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: 'delete',
+                                grade_id: gradeId
+                            })
+                        }
+                    );
+
+                if (!result.success) {
+
+                    button.disabled = false;
+
+                    button.innerHTML =
+                        originalText;
+
+                    showToast(
+                        result.message ||
+                        'Unable to delete grade.',
+                        'error'
+                    );
+
+                    return;
+
+                }
+
+                showToast(
+                    result.message ||
+                    'Grade deleted successfully.',
+                    'success'
+                );
+
+                setTimeout(
+                    () => {
+                        window.location.reload();
+                    },
+                    600
+                );
+
+            }
+        );
 
     });
-
-});
 
 JS;
 

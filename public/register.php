@@ -1,341 +1,374 @@
 <?php
+require_once __DIR__ . '/../includes/session.php';
+
+if (isLoggedIn()) {
+    header('Location: ' . dashboardUrlForRole(currentRole()));
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Student Account - Rosemont Student Grade Viewing System</title>
+<link rel="stylesheet" href="/public/css/style.css">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+.register-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f4f2ff, #eef8ff);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 15px;
-            color: #263248;
-        }
+.register-card {
+    width: 100%;
+    max-width: 760px;
+}
 
-        .register-card {
-            width: 100%;
-            max-width: 650px;
-            background: rgba(255, 255, 255, 0.92);
-            border-radius: 24px;
-            padding: 35px;
-            box-shadow: 0 20px 50px rgba(65, 70, 120, 0.15);
-        }
+.register-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
 
-        .brand {
-            text-align: center;
-            margin-bottom: 28px;
-        }
+.register-header h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+}
 
-        .brand-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 15px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #5146e5, #7278f2);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            box-shadow: 0 10px 25px rgba(81, 70, 229, 0.25);
-        }
+.register-header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+}
 
-        .brand h1 {
-            margin: 0 0 8px;
-            font-size: 25px;
-        }
+.register-section {
+    margin-bottom: 24px;
+}
 
-        .brand p {
-            margin: 0;
-            color: #68758d;
-            font-size: 14px;
-        }
+.register-section-title {
+    margin: 0 0 18px;
+    font-size: 17px;
+    color: var(--text-main);
+}
 
-        .form-section {
-            margin-top: 20px;
-        }
+.register-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
 
-        .form-section h2 {
-            font-size: 17px;
-            margin: 0 0 18px;
-        }
+.register-grid .form-group.full {
+    grid-column: 1 / -1;
+}
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group.full {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 7px;
-        }
-
-        input,
-        select {
-            width: 100%;
-            height: 45px;
-            border: 1px solid #d9deea;
-            border-radius: 11px;
-            padding: 0 13px;
-            font-size: 14px;
-            background: white;
-            color: #263248;
-            outline: none;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: #6157e8;
-            box-shadow: 0 0 0 3px rgba(97, 87, 232, 0.10);
-        }
-
-        .password-note {
-            margin-top: 6px;
-            font-size: 11px;
-            color: #7a8599;
-        }
-
-        .button-row {
-            margin-top: 25px;
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            flex: 1;
-            height: 46px;
-            border: none;
-            border-radius: 11px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-primary {
-            color: white;
-            background: linear-gradient(135deg, #5146e5, #7278f2);
-            box-shadow: 0 8px 18px rgba(81, 70, 229, 0.20);
-        }
-
-        .btn-secondary {
-            color: #4d5870;
-            background: #f1f3f8;
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 22px;
-            font-size: 13px;
-            color: #69758b;
-        }
-
-        .login-link a {
-            color: #5146e5;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        @media (max-width: 600px) {
-            .register-card {
-                padding: 25px 20px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-group.full {
-                grid-column: auto;
-            }
-
-            .button-row {
-                flex-direction: column;
-            }
-        }
-
-        .password-error {
-    color: #dc2626;
-    font-size: 13px;
-    margin-top: 5px;
+.password-error {
     display: none;
+    margin-top: 6px;
+    color: var(--danger);
+    font-size: 12px;
 }
 
 .input-error {
-    border-color: #dc2626 !important;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
 }
-    </style>
+
+.register-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.register-actions .btn {
+    flex: 1;
+}
+
+.register-footer {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.register-footer a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.register-footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 650px) {
+    .register-card {
+        padding: 24px 20px;
+    }
+
+    .register-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .register-grid .form-group.full {
+        grid-column: auto;
+    }
+
+    .register-actions {
+        flex-direction: column;
+    }
+}
+</style>
 </head>
 
 <body>
 
-<div class="register-card">
+<div class="register-page">
 
-    <div class="brand">
-        <div class="brand-icon">RS</div>
+    <div class="glass-card panel register-card">
 
-        <h1>Create Student Account</h1>
+        <div class="register-header">
 
-        <p>
-Enter your information to create your account        </p>
-    </div>
+            <h1>
+                Create Student Account
+            </h1>
 
-    <div class="form-section">
+            <p>
+                Enter your information to create your account
+            </p>
 
-        <h2>Student Information</h2>
+        </div>
 
-        <form id="registerForm">
+        <div
+            id="registerAlert"
+            class="alert alert-error"
+        ></div>
 
-            <div class="form-grid">
+        <form
+            id="registerForm"
+            autocomplete="off"
+        >
 
-                <!-- Student ID -->
-                <div class="form-group">
-                    <label for="student_id">Student ID</label>
-                    <input
-                        type="text"
-                        id="student_id"
-                        name="student_id"
-                        placeholder="e.g. S-2005"
-                        maxlength="50"
-                        required
-                    >
-                </div>
+            <div class="register-section">
 
-                <!-- Email -->
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="student@example.com"
-                        maxlength="150"
-                        required
-                    >
-                </div>
+                <h2 class="register-section-title">
+                    Student Information
+                </h2>
 
-                <!-- First Name -->
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input
-                        type="text"
-                        id="first_name"
-                        name="first_name"
-                        placeholder="Enter first name"
-                        maxlength="100"
-                        required
-                    >
-                </div>
+                <div class="register-grid">
 
-                <!-- Last Name -->
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input
-                        type="text"
-                        id="last_name"
-                        name="last_name"
-                        placeholder="Enter last name"
-                        maxlength="100"
-                        required
-                    >
-                </div>
+                    <div class="form-group">
 
-                <!-- Course -->
-                <div class="form-group">
-                    <label for="course">Course</label>
+                        <label for="student_id">
+                            Student ID
+                        </label>
 
-                    <select id="course" name="course" required>
-                        <option value="">Select course</option>
-                        <option value="BS Computer Science">
-                            BS Computer Science
-                        </option>
-                        <option value="BS Information Technology">
-                            BS Information Technology
-                        </option>
-                    </select>
-                </div>
+                        <input
+                            type="text"
+                            id="student_id"
+                            name="student_id"
+                            class="form-control"
+                            placeholder="e.g. S-2005"
+                            maxlength="50"
+                            required
+                        >
 
-                <!-- Year Level -->
-                <div class="form-group">
-                    <label for="year_level">Year Level</label>
+                    </div>
 
-                    <select id="year_level" name="year_level" required>
-                        <option value="">Select year level</option>
-                        <option value="1">1st Year</option>
-                        <option value="2">2nd Year</option>
-                        <option value="3">3rd Year</option>
-                        <option value="4">4th Year</option>
-                        <option value="5">5th Year</option>
-                        <option value="6">6th Year</option>
-                    </select>
-                </div>
+                    <div class="form-group">
 
-                <!-- Password -->
-                <div class="form-group">
-                    <label for="password">Password</label>
+                        <label for="email">
+                            Email Address
+                        </label>
 
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Create a password"
-                        minlength="6"
-                        required
-                    >
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control"
+                            placeholder="student@example.com"
+                            maxlength="150"
+                            required
+                        >
 
-                    <span class="password-note">
-                        Minimum of 6 characters
-                    </span>
-                </div>
+                    </div>
 
-                <!-- Confirm Password -->
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password</label>
+                    <div class="form-group">
 
-                    <input
-                        type="password"
-                        id="confirm_password"
-                        name="confirm_password"
-                        placeholder="Re-enter your password"
-                        minlength="6"
-                        required
-                    >
-                     <p id="passwordError" class="password-error">
-                     Passwords do not match.
-                  </p>
+                        <label for="first_name">
+                            First Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="first_name"
+                            name="first_name"
+                            class="form-control"
+                            placeholder="Enter first name"
+                            maxlength="100"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="last_name">
+                            Last Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="last_name"
+                            name="last_name"
+                            class="form-control"
+                            placeholder="Enter last name"
+                            maxlength="100"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="course">
+                            Course
+                        </label>
+
+                        <select
+                            id="course"
+                            name="course"
+                            class="form-control"
+                            required
+                        >
+
+                            <option value="">
+                                Select course
+                            </option>
+
+                            <option value="Bachelor of Science in Criminology">
+                                Bachelor of Science in Criminology
+                            </option>
+
+                            <option value="Bachelor of Science in Information Technology">
+                                Bachelor of Science in Information Technology
+                            </option>
+
+                            <option value="Bachelor of Elementary Education">
+                                Bachelor of Elementary Education
+                            </option>
+
+                            <option value="Bachelor of Science in Office Administration">
+                                Bachelor of Science in Office Administration
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="year_level">
+                            Year Level
+                        </label>
+
+                        <select
+                            id="year_level"
+                            name="year_level"
+                            class="form-control"
+                            required
+                        >
+
+                            <option value="">
+                                Select year level
+                            </option>
+
+                            <option value="1">
+                                1st Year
+                            </option>
+
+                            <option value="2">
+                                2nd Year
+                            </option>
+
+                            <option value="3">
+                                3rd Year
+                            </option>
+
+                            <option value="4">
+                                4th Year
+                            </option>
+
+                        </select>
+
+                    </div>
+
                 </div>
 
             </div>
 
-            <div class="button-row">
+            <div class="register-section">
+
+                <h2 class="register-section-title">
+                    Account Security
+                </h2>
+
+                <div class="register-grid">
+
+                    <div class="form-group">
+
+                        <label for="password">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control"
+                            placeholder="Create a password"
+                            minlength="6"
+                            required
+                        >
+
+                        <div class="form-hint">
+                            Minimum of 6 characters
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="confirm_password">
+                            Confirm Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            class="form-control"
+                            placeholder="Re-enter your password"
+                            minlength="6"
+                            required
+                        >
+
+                        <p
+                            id="passwordError"
+                            class="password-error"
+                        >
+                            Passwords do not match.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="register-actions">
 
                 <a
                     href="login.php"
@@ -346,6 +379,7 @@ Enter your information to create your account        </p>
 
                 <button
                     type="submit"
+                    id="registerBtn"
                     class="btn btn-primary"
                 >
                     Create Account
@@ -355,42 +389,100 @@ Enter your information to create your account        </p>
 
         </form>
 
-        <div class="login-link">
+        <div class="register-footer">
+
             Already have an account?
-            <a href="login.php">Log in here</a>
+
+            <a href="login.php">
+                Log in here
+            </a>
+
         </div>
 
     </div>
 
 </div>
+
 <script>
-const passwordInput = document.querySelector('input[name="password"]');
-const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
-const passwordError = document.getElementById('passwordError');
+const registerForm =
+    document.getElementById('registerForm');
+
+const passwordInput =
+    document.getElementById('password');
+
+const confirmPasswordInput =
+    document.getElementById('confirm_password');
+
+const passwordError =
+    document.getElementById('passwordError');
+
+const registerBtn =
+    document.getElementById('registerBtn');
+
+const registerAlert =
+    document.getElementById('registerAlert');
+
+function showRegisterError(message) {
+
+    registerAlert.textContent = message;
+    registerAlert.classList.add('show');
+
+}
+
+function hideRegisterError() {
+
+    registerAlert.classList.remove('show');
+
+}
 
 function checkPasswords() {
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
 
-    if (confirmPassword !== '' && password !== confirmPassword) {
-        confirmPasswordInput.classList.add('input-error');
+    const password =
+        passwordInput.value;
+
+    const confirmPassword =
+        confirmPasswordInput.value;
+
+    if (
+        confirmPassword !== '' &&
+        password !== confirmPassword
+    ) {
+
+        confirmPasswordInput.classList.add(
+            'input-error'
+        );
+
         passwordError.style.display = 'block';
+
         return false;
     }
 
-    confirmPasswordInput.classList.remove('input-error');
+    confirmPasswordInput.classList.remove(
+        'input-error'
+    );
+
     passwordError.style.display = 'none';
+
     return true;
 }
 
-passwordInput.addEventListener('input', checkPasswords);
-confirmPasswordInput.addEventListener('input', checkPasswords);
+passwordInput.addEventListener(
+    'input',
+    checkPasswords
+);
 
-document
-    .getElementById('registerForm')
-    .addEventListener('submit', async function (event) {
+confirmPasswordInput.addEventListener(
+    'input',
+    checkPasswords
+);
+
+registerForm.addEventListener(
+    'submit',
+    async (event) => {
 
         event.preventDefault();
+
+        hideRegisterError();
 
         if (!checkPasswords()) {
             return;
@@ -399,47 +491,92 @@ document
         const form = event.target;
 
         const data = {
-            student_id: form.student_id.value.trim(),
-            first_name: form.first_name.value.trim(),
-            last_name: form.last_name.value.trim(),
-            email: form.email.value.trim(),
-            course: form.course.value,
-            year_level: Number(form.year_level.value),
-            password: form.password.value,
-            confirm_password: form.confirm_password.value
+            student_id:
+                form.student_id.value.trim(),
+
+            first_name:
+                form.first_name.value.trim(),
+
+            last_name:
+                form.last_name.value.trim(),
+
+            email:
+                form.email.value.trim(),
+
+            course:
+                form.course.value,
+
+            year_level:
+                Number(form.year_level.value),
+
+            password:
+                form.password.value,
+
+            confirm_password:
+                form.confirm_password.value
         };
+
+        registerBtn.disabled = true;
+
+        registerBtn.textContent =
+            'Creating Account...';
 
         try {
 
-            const response = await fetch('../api/register.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+            const response =
+                await fetch(
+                    '../api/register.php',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type':
+                                'application/json'
+                        },
+                        body:
+                            JSON.stringify(data)
+                    }
+                );
 
-            const result = await response.json();
+            const result =
+                await response.json();
 
             if (!response.ok) {
-                alert(result.message || 'Unable to create account.');
+
+                showRegisterError(
+                    result.message ||
+                    'Unable to create account.'
+                );
+
+                registerBtn.disabled = false;
+
+                registerBtn.textContent =
+                    'Create Account';
+
                 return;
             }
 
-            alert('Account created successfully!');
+            alert(
+                'Account created successfully!'
+            );
 
-            window.location.href = 'login.php';
+            window.location.href =
+                'login.php';
 
         } catch (error) {
 
-            console.error('Registration error:', error);
-
-            alert(
-                'Unable to connect to the server. ' +
-                'Please make sure the PHP server is running.'
+            showRegisterError(
+                'Unable to connect to the server. Please make sure the PHP server is running.'
             );
+
+            registerBtn.disabled = false;
+
+            registerBtn.textContent =
+                'Create Account';
         }
-    });
+
+    }
+);
 </script>
+
 </body>
 </html>
