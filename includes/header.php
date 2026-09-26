@@ -16,13 +16,14 @@ $navByRole = [
         ['grades',    'Grade Management', '/teacher/grades.php'],
     ],
     'admin' => [
-        ['dashboard', 'Dashboard',      '/admin/dashboard.php'],
-        ['students',  'Students',       '/admin/students.php'],
-        ['teachers',  'Teachers',       '/admin/teachers.php'],
-        ['subjects',  'Subjects',       '/admin/subjects.php'],
-        ['terms',     'Academic Terms', '/admin/terms.php'],
-        ['users',     'User Accounts',  '/admin/users.php'],
-        ['grades',    'Grade Records',  '/admin/grades.php'],
+        ['dashboard',    'Dashboard',           '/admin/dashboard.php'],
+        ['students',     'Students',            '/admin/students.php'],
+        ['teachers',     'Teachers',            '/admin/teachers.php'],
+        ['subjects',     'Subjects',            '/admin/subjects.php'],
+        ['assignments',  'Subject Assignments', '/admin/assignments.php'],
+        ['terms',        'Academic Terms',      '/admin/terms.php'],
+        ['users',        'User Accounts',       '/admin/users.php'],
+        ['grades',       'Grade Records',       '/admin/grades.php'],
     ],
 ];
 

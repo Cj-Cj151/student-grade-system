@@ -13,7 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $body = readJsonBody();
 $pdo = getDbConnection();
 
-$action = strtolower(trim((string) ($body['action'] ?? '')));
+$action = strtolower(
+    trim((string) ($body['action'] ?? ''))
+);
 
 if ($action === 'delete') {
 
@@ -22,60 +24,58 @@ if ($action === 'delete') {
         : 0;
 
     if (!$termId) {
-        jsonResponse(false, 'Missing academic term.', [], 422);
-    }
-
-    $stmt = $pdo->prepare('
-        SELECT
-            term_id,
-            school_year,
-            semester,
-            grading_period,
-            status
-        FROM academic_terms
-        WHERE term_id = :tid
-        LIMIT 1
-    ');
-
-    $stmt->execute([
-        'tid' => $termId
-    ]);
-
-    $term = $stmt->fetch();
-
-    if (!$term) {
         jsonResponse(
             false,
-            'Academic term not found.',
+            'Missing academic term.',
             [],
-            404
-        );
-    }
-
-    $stmt = $pdo->prepare('
-        SELECT COUNT(*)
-        FROM grades
-        WHERE term_id = :tid
-    ');
-
-    $stmt->execute([
-        'tid' => $termId
-    ]);
-
-    $gradeCount = (int) $stmt->fetchColumn();
-
-    if ($gradeCount > 0) {
-        jsonResponse(
-            false,
-            'This academic term cannot be deleted because grade records already exist for it.',
-            [
-                'grade_count' => $gradeCount
-            ],
-            409
+            422
         );
     }
 
     try {
+
+        $stmt = $pdo->prepare('
+            SELECT term_id
+            FROM academic_terms
+            WHERE term_id = :tid
+            LIMIT 1
+        ');
+
+        $stmt->execute([
+            'tid' => $termId
+        ]);
+
+        if (!$stmt->fetch()) {
+            jsonResponse(
+                false,
+                'Academic term not found.',
+                [],
+                404
+            );
+        }
+
+        $stmt = $pdo->prepare('
+            SELECT COUNT(*)
+            FROM grades
+            WHERE term_id = :tid
+        ');
+
+        $stmt->execute([
+            'tid' => $termId
+        ]);
+
+        $gradeCount = (int) $stmt->fetchColumn();
+
+        if ($gradeCount > 0) {
+            jsonResponse(
+                false,
+                'This academic term cannot be deleted because grade records already exist for it.',
+                [
+                    'grade_count' => $gradeCount
+                ],
+                409
+            );
+        }
 
         $stmt = $pdo->prepare('
             DELETE FROM academic_terms
@@ -88,7 +88,10 @@ if ($action === 'delete') {
 
     } catch (PDOException $e) {
 
-        error_log('Academic term delete failed: ' . $e->getMessage());
+        error_log(
+            'Academic term delete failed: '
+            . $e->getMessage()
+        );
 
         jsonResponse(
             false,
@@ -104,7 +107,6 @@ if ($action === 'delete') {
     );
 }
 
-
 if ($action === 'set_active') {
 
     $termId = !empty($body['term_id'])
@@ -112,7 +114,12 @@ if ($action === 'set_active') {
         : 0;
 
     if (!$termId) {
-        jsonResponse(false, 'Missing term.', [], 422);
+        jsonResponse(
+            false,
+            'Missing term.',
+            [],
+            422
+        );
     }
 
     try {
@@ -123,6 +130,7 @@ if ($action === 'set_active') {
             SELECT term_id
             FROM academic_terms
             WHERE term_id = :tid
+            LIMIT 1
         ');
 
         $stmt->execute([
@@ -130,6 +138,7 @@ if ($action === 'set_active') {
         ]);
 
         if (!$stmt->fetch()) {
+
             $pdo->rollBack();
 
             jsonResponse(
@@ -148,11 +157,12 @@ if ($action === 'set_active') {
 
         $stmt = $pdo->prepare('
             UPDATE academic_terms
-            SET status = \'active\'
+            SET status = :status
             WHERE term_id = :tid
         ');
 
         $stmt->execute([
+            'status' => 'active',
             'tid' => $termId
         ]);
 
@@ -164,7 +174,10 @@ if ($action === 'set_active') {
             $pdo->rollBack();
         }
 
-        error_log('Set active term failed: ' . $e->getMessage());
+        error_log(
+            'Set active term failed: '
+            . $e->getMessage()
+        );
 
         jsonResponse(
             false,
@@ -180,14 +193,22 @@ if ($action === 'set_active') {
     );
 }
 
-
 $termId = !empty($body['term_id'])
     ? (int) $body['term_id']
     : null;
 
-$schoolYear = trim((string) ($body['school_year'] ?? ''));
-$semester = trim((string) ($body['semester'] ?? ''));
-$gradingPeriod = trim((string) ($body['grading_period'] ?? ''));
+$schoolYear = trim(
+    (string) ($body['school_year'] ?? '')
+);
+
+$semester = trim(
+    (string) ($body['semester'] ?? '')
+);
+
+$gradingPeriod = trim(
+    (string) ($body['grading_period'] ?? '')
+);
+
 $makeActive = !empty($body['make_active']);
 
 if (
@@ -252,6 +273,7 @@ try {
           AND semester = :sem
           AND grading_period = :gp
           AND term_id != :tid
+        LIMIT 1
     ');
 
     $stmt->execute([
@@ -262,13 +284,35 @@ try {
     ]);
 
     if ($stmt->fetch()) {
-
         jsonResponse(
             false,
             'That school year, semester, and grading period combination already exists.',
             [],
             409
         );
+    }
+
+    if ($termId) {
+
+        $stmt = $pdo->prepare('
+            SELECT term_id
+            FROM academic_terms
+            WHERE term_id = :tid
+            LIMIT 1
+        ');
+
+        $stmt->execute([
+            'tid' => $termId
+        ]);
+
+        if (!$stmt->fetch()) {
+            jsonResponse(
+                false,
+                'Academic term not found.',
+                [],
+                404
+            );
+        }
     }
 
     $pdo->beginTransaction();
@@ -343,7 +387,10 @@ try {
         $pdo->rollBack();
     }
 
-    error_log('Term save failed: ' . $e->getMessage());
+    error_log(
+        'Term save failed: '
+        . $e->getMessage()
+    );
 
     jsonResponse(
         false,
@@ -353,4 +400,7 @@ try {
     );
 }
 
-jsonResponse(true, $message);
+jsonResponse(
+    true,
+    $message
+);

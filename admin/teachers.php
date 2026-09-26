@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../config/database.php';
@@ -8,8 +9,15 @@ requireRole('admin');
 $pdo = getDbConnection();
 
 $teachers = $pdo->query('
-    SELECT t.teacher_id, t.first_name, t.last_name, t.email, t.department,
-           u.user_id, u.login_id, u.is_active
+    SELECT
+        t.teacher_id,
+        t.first_name,
+        t.last_name,
+        t.email,
+        t.department,
+        u.user_id,
+        u.login_id,
+        u.is_active
     FROM teachers t
     JOIN users u ON u.user_id = t.user_id
     ORDER BY t.last_name, t.first_name
@@ -27,7 +35,10 @@ include __DIR__ . '/../includes/header.php';
     <div class="panel-header">
 
         <div>
-            <h2 class="panel-title">All Teachers</h2>
+            <h2 class="panel-title">
+                All Teachers
+            </h2>
+
             <p class="panel-subtitle">
                 View and manage registered teacher accounts
             </p>
@@ -36,12 +47,14 @@ include __DIR__ . '/../includes/header.php';
         <div class="toolbar">
 
             <div class="search-input-wrap">
+
                 <input
                     type="text"
                     id="searchInput"
                     class="form-control search-input"
                     placeholder="Search teachers..."
                 >
+
             </div>
 
             <button
@@ -59,16 +72,26 @@ include __DIR__ . '/../includes/header.php';
     <?php if (empty($teachers)): ?>
 
         <div class="empty-state">
-            <p>No teachers yet.</p>
+
+            <h3>No Registered Teachers</h3>
+
+            <p>
+                Add a teacher account to begin managing teacher records.
+            </p>
+
         </div>
 
     <?php else: ?>
 
         <div class="table-wrap">
 
-            <table class="data-table" id="teachersTable">
+            <table
+                class="data-table"
+                id="teachersTable"
+            >
 
                 <thead>
+
                     <tr>
                         <th>Teacher ID</th>
                         <th>Name</th>
@@ -77,42 +100,56 @@ include __DIR__ . '/../includes/header.php';
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
+
                 </thead>
 
                 <tbody>
 
-                    <?php foreach ($teachers as $t): ?>
+                    <?php foreach ($teachers as $teacher): ?>
 
                         <tr
                             data-search="<?= clean(strtolower(
-                                $t['login_id'] . ' ' .
-                                $t['first_name'] . ' ' .
-                                $t['last_name'] . ' ' .
-                                $t['email'] . ' ' .
-                                $t['department']
+                                $teacher['login_id'] . ' ' .
+                                $teacher['first_name'] . ' ' .
+                                $teacher['last_name'] . ' ' .
+                                $teacher['email'] . ' ' .
+                                $teacher['department']
                             )) ?>"
                         >
 
                             <td>
-                                <?= clean($t['login_id']) ?>
+                                <strong>
+                                    <?= clean($teacher['login_id']) ?>
+                                </strong>
                             </td>
 
                             <td>
-                                <?= clean($t['first_name'] . ' ' . $t['last_name']) ?>
+                                <?= clean(
+                                    $teacher['first_name'] . ' ' .
+                                    $teacher['last_name']
+                                ) ?>
                             </td>
 
                             <td class="cell-muted">
-                                <?= clean($t['email']) ?>
+                                <?= clean($teacher['email']) ?>
                             </td>
 
                             <td>
-                                <?= clean($t['department']) ?>
+                                <?= clean($teacher['department']) ?>
                             </td>
 
                             <td>
-                                <span class="badge <?= $t['is_active'] ? 'badge-active' : 'badge-inactive' ?>">
-                                    <?= $t['is_active'] ? 'Active' : 'Inactive' ?>
+
+                                <span
+                                    class="badge <?= $teacher['is_active']
+                                        ? 'badge-active'
+                                        : 'badge-inactive' ?>"
+                                >
+                                    <?= $teacher['is_active']
+                                        ? 'Active'
+                                        : 'Inactive' ?>
                                 </span>
+
                             </td>
 
                             <td class="row-actions">
@@ -120,20 +157,26 @@ include __DIR__ . '/../includes/header.php';
                                 <button
                                     type="button"
                                     class="btn btn-secondary btn-sm"
-                                    onclick='openEditModal(<?= json_encode($t) ?>)'
+                                    onclick='openEditModal(<?= json_encode($teacher) ?>)'
                                 >
                                     Edit
                                 </button>
 
                                 <button
                                     type="button"
-                                    class="btn btn-sm <?= $t['is_active'] ? 'btn-danger' : 'btn-primary' ?>"
+                                    class="btn btn-sm <?= $teacher['is_active']
+                                        ? 'btn-danger'
+                                        : 'btn-primary' ?>"
                                     onclick="toggleStatus(
-                                        <?= (int) $t['user_id'] ?>,
-                                        <?= $t['is_active'] ? 'false' : 'true' ?>
+                                        <?= (int) $teacher['user_id'] ?>,
+                                        <?= $teacher['is_active']
+                                            ? 'false'
+                                            : 'true' ?>
                                     )"
                                 >
-                                    <?= $t['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                    <?= $teacher['is_active']
+                                        ? 'Deactivate'
+                                        : 'Activate' ?>
                                 </button>
 
                             </td>
@@ -148,34 +191,48 @@ include __DIR__ . '/../includes/header.php';
 
         </div>
 
-        <p
+        <div
             class="empty-state"
             id="noResultsState"
-            style="display:none;"
+            style="display: none;"
         >
-            No teachers match your search.
-        </p>
+            <p>No teachers match your search.</p>
+        </div>
 
     <?php endif; ?>
 
 </div>
 
-<div class="modal-overlay" id="teacherModal">
+<div
+    class="modal-overlay"
+    id="teacherModal"
+>
 
     <div class="glass-card modal-box">
 
         <div class="modal-header">
 
-            <h3 class="modal-title" id="teacherModalTitle">
-                Add Teacher
-            </h3>
+            <div>
+
+                <h3
+                    class="modal-title"
+                    id="teacherModalTitle"
+                >
+                    Add Teacher
+                </h3>
+
+                <p class="modal-subtitle">
+                    Create or update a teacher account.
+                </p>
+
+            </div>
 
             <button
                 type="button"
                 class="modal-close"
                 onclick="closeModal('teacherModal')"
             >
-                ×
+                Close
             </button>
 
         </div>
@@ -328,41 +385,67 @@ include __DIR__ . '/../includes/header.php';
 <?php
 
 $extraScript = <<<'JS'
-const searchInput = document.getElementById('searchInput');
-const rows = document.querySelectorAll('#teachersTable tbody tr');
-const noResultsState = document.getElementById('noResultsState');
+
+const searchInput =
+    document.getElementById('searchInput');
+
+const rows =
+    document.querySelectorAll('#teachersTable tbody tr');
+
+const noResultsState =
+    document.getElementById('noResultsState');
 
 if (searchInput) {
+
     searchInput.addEventListener('input', () => {
-        const search = searchInput.value.trim().toLowerCase();
+
+        const search =
+            searchInput.value.trim().toLowerCase();
+
         let visible = 0;
 
         rows.forEach((row) => {
-            const show = row.dataset.search.includes(search);
 
-            row.style.display = show ? '' : 'none';
+            const show =
+                row.dataset.search.includes(search);
+
+            row.style.display =
+                show ? '' : 'none';
 
             if (show) {
                 visible++;
             }
+
         });
 
         if (noResultsState) {
-            noResultsState.style.display = visible === 0 ? 'block' : 'none';
+
+            noResultsState.style.display =
+                visible === 0 ? 'block' : 'none';
+
         }
+
     });
+
 }
 
 function openAddModal() {
-    document.getElementById('teacherForm').reset();
+
+    document
+        .getElementById('teacherForm')
+        .reset();
 
     document.getElementById('teacher_id').value = '';
     document.getElementById('user_id').value = '';
 
-    document.getElementById('teacherModalTitle').textContent = 'Add Teacher';
+    document
+        .getElementById('teacherModalTitle')
+        .textContent = 'Add Teacher';
 
     document.getElementById('password').required = true;
-    document.getElementById('password').placeholder = 'Initial password';
+
+    document.getElementById('password').placeholder =
+        'Initial password';
 
     hideTeacherAlert();
 
@@ -370,21 +453,40 @@ function openAddModal() {
 }
 
 function openEditModal(teacher) {
-    document.getElementById('teacherForm').reset();
 
-    document.getElementById('teacher_id').value = teacher.teacher_id;
-    document.getElementById('user_id').value = teacher.user_id;
+    document
+        .getElementById('teacherForm')
+        .reset();
 
-    document.getElementById('first_name').value = teacher.first_name;
-    document.getElementById('last_name').value = teacher.last_name;
-    document.getElementById('email').value = teacher.email;
-    document.getElementById('department').value = teacher.department;
-    document.getElementById('login_id').value = teacher.login_id;
+    document.getElementById('teacher_id').value =
+        teacher.teacher_id;
+
+    document.getElementById('user_id').value =
+        teacher.user_id;
+
+    document.getElementById('first_name').value =
+        teacher.first_name;
+
+    document.getElementById('last_name').value =
+        teacher.last_name;
+
+    document.getElementById('email').value =
+        teacher.email;
+
+    document.getElementById('department').value =
+        teacher.department;
+
+    document.getElementById('login_id').value =
+        teacher.login_id;
 
     document.getElementById('password').required = false;
-    document.getElementById('password').placeholder = 'Leave blank to keep current password';
 
-    document.getElementById('teacherModalTitle').textContent = 'Edit Teacher';
+    document.getElementById('password').placeholder =
+        'Leave blank to keep current password';
+
+    document
+        .getElementById('teacherModalTitle')
+        .textContent = 'Edit Teacher';
 
     hideTeacherAlert();
 
@@ -392,62 +494,106 @@ function openEditModal(teacher) {
 }
 
 function showTeacherAlert(message) {
-    const alertBox = document.getElementById('teacherModalAlert');
+
+    const alertBox =
+        document.getElementById('teacherModalAlert');
 
     alertBox.textContent = message;
     alertBox.classList.add('show');
 }
 
 function hideTeacherAlert() {
-    document.getElementById('teacherModalAlert').classList.remove('show');
+
+    document
+        .getElementById('teacherModalAlert')
+        .classList.remove('show');
 }
 
-document.getElementById('teacherForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+document
+    .getElementById('teacherForm')
+    .addEventListener('submit', async (e) => {
 
-    hideTeacherAlert();
+        e.preventDefault();
 
-    const payload = {
-        teacher_id: document.getElementById('teacher_id').value || null,
-        user_id: document.getElementById('user_id').value || null,
-        first_name: document.getElementById('first_name').value.trim(),
-        last_name: document.getElementById('last_name').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        department: document.getElementById('department').value.trim(),
-        login_id: document.getElementById('login_id').value.trim(),
-        password: document.getElementById('password').value
-    };
+        hideTeacherAlert();
 
-    const saveBtn = document.getElementById('teacherSaveBtn');
+        const payload = {
 
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            teacher_id:
+                document.getElementById('teacher_id').value || null,
 
-    const result = await apiFetch('/api/teachers.php', {
-        method: 'POST',
-        body: JSON.stringify(payload)
+            user_id:
+                document.getElementById('user_id').value || null,
+
+            first_name:
+                document.getElementById('first_name')
+                    .value.trim(),
+
+            last_name:
+                document.getElementById('last_name')
+                    .value.trim(),
+
+            email:
+                document.getElementById('email')
+                    .value.trim(),
+
+            department:
+                document.getElementById('department')
+                    .value.trim(),
+
+            login_id:
+                document.getElementById('login_id')
+                    .value.trim(),
+
+            password:
+                document.getElementById('password')
+                    .value
+
+        };
+
+        const saveBtn =
+            document.getElementById('teacherSaveBtn');
+
+        saveBtn.disabled = true;
+
+        saveBtn.innerHTML =
+            '<span class="spinner"></span> Saving...';
+
+        const result = await apiFetch(
+            '/api/teachers.php',
+            {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }
+        );
+
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Teacher';
+
+        if (result.success) {
+
+            showToast(
+                result.message || 'Teacher saved.',
+                'success'
+            );
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 700);
+
+        } else {
+
+            showTeacherAlert(
+                result.message ||
+                'Unable to save teacher.'
+            );
+
+        }
+
     });
 
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Save Teacher';
-
-    if (result.success) {
-        showToast(
-            result.message || 'Teacher saved.',
-            'success'
-        );
-
-        setTimeout(() => {
-            window.location.reload();
-        }, 700);
-    } else {
-        showTeacherAlert(
-            result.message || 'Unable to save teacher.'
-        );
-    }
-});
-
 async function toggleStatus(userId, makeActive) {
+
     const ok = await confirmAction(
         makeActive
             ? 'Activate this teacher account?'
@@ -461,16 +607,20 @@ async function toggleStatus(userId, makeActive) {
         return;
     }
 
-    const result = await apiFetch('/api/users.php', {
-        method: 'POST',
-        body: JSON.stringify({
-            action: 'toggle_status',
-            user_id: userId,
-            is_active: makeActive
-        })
-    });
+    const result = await apiFetch(
+        '/api/users.php',
+        {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'toggle_status',
+                user_id: userId,
+                is_active: makeActive
+            })
+        }
+    );
 
     if (result.success) {
+
         showToast(
             result.message || 'Status updated.',
             'success'
@@ -479,14 +629,21 @@ async function toggleStatus(userId, makeActive) {
         setTimeout(() => {
             window.location.reload();
         }, 600);
+
     } else {
+
         showToast(
-            result.message || 'Unable to update status.',
+            result.message ||
+            'Unable to update status.',
             'error'
         );
+
     }
+
 }
+
 JS;
 
 include __DIR__ . '/../includes/footer.php';
+
 ?>
